@@ -2,8 +2,39 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Rechner">
+<meta name="theme-color" content="#2c2c2e">
 <title>Rechner</title>
+<script>
+// Inline SVG icon as data URL for manifest
+const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#2c2c2e"/><rect x="60" y="60" width="392" height="150" rx="24" fill="#1c1c1e"/><text x="392" y="185" text-anchor="end" font-family="-apple-system,sans-serif" font-size="100" font-weight="200" fill="#f5f5f7">0</text><circle cx="100" cy="300" r="42" fill="#3a3a3c"/><circle cx="214" cy="300" r="42" fill="#3a3a3c"/><circle cx="328" cy="300" r="42" fill="#3a3a3c"/><circle cx="442" cy="300" r="42" fill="#ff9f0a"/><circle cx="100" cy="412" r="42" fill="#48484a"/><circle cx="214" cy="412" r="42" fill="#48484a"/><circle cx="328" cy="412" r="42" fill="#48484a"/><circle cx="442" cy="412" r="42" fill="#ff9f0a"/></svg>`;
+const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(iconSvg);
+const manifest = {
+  name: 'Rechner',
+  short_name: 'Rechner',
+  start_url: window.location.href,
+  display: 'standalone',
+  background_color: '#2c2c2e',
+  theme_color: '#2c2c2e',
+  icons: [
+    { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+const manifestUrl = URL.createObjectURL(blob);
+document.addEventListener('DOMContentLoaded', () => {
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = manifestUrl;
+  document.head.appendChild(link);
+  const icon = document.createElement('link');
+  icon.rel = 'apple-touch-icon'; icon.href = iconUrl;
+  document.head.appendChild(icon);
+});
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -158,15 +189,18 @@
   .field-label { color: #6e6e73; font-size: 12px; margin-bottom: 4px; display: block; }
   .field-input {
     width: 100%; background: #2c2c2e; border: 1px solid #3a3a3c;
-    border-radius: 8px; padding: 9px 12px; color: #f5f5f7;
-    font-size: 14px; outline: none; transition: border-color 0.15s;
+    border-radius: 8px; padding: 12px 14px; color: #f5f5f7;
+    font-size: 16px; outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none; appearance: none;
+    cursor: text; touch-action: manipulation;
   }
   .field-input:focus { border-color: #ff9f0a; }
   textarea.field-input { resize: vertical; min-height: 80px; font-family: inherit; }
   .add-btn {
     background: #ff9f0a; border: none; border-radius: 8px;
-    padding: 9px 16px; color: #fff; font-size: 14px;
-    font-weight: 600;  transition: filter 0.15s; width: 100%;
+    padding: 14px 16px; color: #fff; font-size: 16px;
+    font-weight: 600; transition: filter 0.15s; width: 100%;
+    touch-action: manipulation; cursor: pointer;
   }
   .add-btn:hover { filter: brightness(1.1); }
   .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -290,20 +324,20 @@
 
       <!-- PASSWORDS -->
       <div class="tab-panel active" id="tab-passwords">
-        <input class="field-input" id="pw-search" placeholder="🔍 Passwörter durchsuchen…" oninput="filterPasswords(this.value)" style="margin-bottom:16px">
+        <input class="field-input" id="pw-search" placeholder="🔍 Passwörter durchsuchen…" oninput="filterPasswords(this.value)" inputmode="search" style="margin-bottom:16px">
         <div class="add-form">
           <div class="section-hdr">Neues Passwort</div>
           <div class="field-row">
             <label class="field-label">Name / Website</label>
-            <input class="field-input" id="pw-name" placeholder="z.B. Google, Netflix…">
+            <input class="field-input" id="pw-name" placeholder="z.B. Google, Netflix…" inputmode="text" autocomplete="off">
           </div>
           <div class="field-row">
             <label class="field-label">Benutzername / E-Mail</label>
-            <input class="field-input" id="pw-user" placeholder="user@example.com">
+            <input class="field-input" id="pw-user" placeholder="user@example.com" inputmode="email" autocomplete="off">
           </div>
           <div class="field-row">
             <label class="field-label">Passwort</label>
-            <input class="field-input" id="pw-pass" type="text" placeholder="••••••••">
+            <input class="field-input" id="pw-pass" type="text" placeholder="Passwort eingeben" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
           </div>
           <button class="add-btn" id="pw-save-btn" onclick="savePassword()">Speichern</button>
         </div>
@@ -313,16 +347,16 @@
 
       <!-- NOTES -->
       <div class="tab-panel" id="tab-notes">
-        <input class="field-input" id="note-search" placeholder="🔍 Notizen durchsuchen…" oninput="filterNotes(this.value)" style="margin-bottom:16px">
+        <input class="field-input" id="note-search" placeholder="🔍 Notizen durchsuchen…" oninput="filterNotes(this.value)" inputmode="search" style="margin-bottom:16px">
         <div class="add-form">
           <div class="section-hdr">Neue Notiz</div>
           <div class="field-row">
             <label class="field-label">Titel</label>
-            <input class="field-input" id="note-title" placeholder="Titel…">
+            <input class="field-input" id="note-title" placeholder="Titel…" inputmode="text" autocomplete="off">
           </div>
           <div class="field-row">
             <label class="field-label">Inhalt</label>
-            <textarea class="field-input" id="note-body" placeholder="Geheimer Text…"></textarea>
+            <textarea class="field-input" id="note-body" placeholder="Geheimer Text…" inputmode="text"></textarea>
           </div>
           <button class="add-btn" id="note-save-btn" onclick="saveNote()">Speichern</button>
         </div>
@@ -336,7 +370,7 @@
           <div class="section-hdr">Dokument hochladen</div>
           <div class="field-row">
             <label class="field-label">Beschreibung</label>
-            <input class="field-input" id="doc-desc" placeholder="z.B. Debeka Versicherung, Reisepass…">
+            <input class="field-input" id="doc-desc" placeholder="z.B. Debeka Versicherung, Reisepass…" inputmode="text" autocomplete="off">
           </div>
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
             <div class="upload-icon">📎</div>
