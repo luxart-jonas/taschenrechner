@@ -294,27 +294,14 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ═══════════ SETUP OVERLAY ═══════════ -->
-<div class="overlay" id="setup">
-  <div class="overlay-header">
-    <div class="overlay-title">⚙️ Code einrichten</div>
-    <button class="lock-btn" onclick="closeSetup()">Abbrechen</button>
+<!-- ═══════════ SETUP BANNER (kein Overlay mehr, Rechner bleibt sichtbar) ═══════════ -->
+<div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#ff9f0a;padding:14px 20px;flex-direction:column;align-items:center;gap:6px">
+  <div style="color:#fff;font-size:15px;font-weight:600">⚙️ Neuen Code eingeben &amp; = drücken</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 20px;color:#fff;font-size:20px;font-family:monospace;min-width:120px;text-align:center" id="setup-display">– – –</div>
+    <button onclick="closeSetup()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">✕</button>
   </div>
-  <div class="overlay-content">
-    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 30px;gap:20px">
-      <div class="setup-info">
-        Gib jetzt deinen <b>neuen Geheim-Code</b> im Taschenrechner ein.<br><br>
-        z.B. <b>34 + 12 =</b><br><br>
-        Danach öffnet dieser Code immer den Tresor.
-      </div>
-      <div class="setup-calc-preview">
-        <div class="setup-label">Warte auf Eingabe…</div>
-        <div class="setup-input-display" id="setup-display">_ _ _</div>
-        <div class="setup-hint">Rechenaufgabe im Rechner eingeben &amp; = drücken</div>
-      </div>
-      <div class="setup-status" id="setup-status"></div>
-    </div>
-  </div>
+  <div style="color:rgba(255,255,255,0.8);font-size:12px" id="setup-status"></div>
 </div>
 
 <!-- ═══════════ VAULT OVERLAY ═══════════ -->
@@ -422,8 +409,8 @@ let calcExpr = '', calcCurrent = '0', calcOperator = null, calcPrev = null, calc
 function updateDisplay() {
   document.getElementById('result').textContent = calcCurrent;
   document.getElementById('expr').textContent   = calcExpr;
-  // mirror into setup display if setup is open
-  if (document.getElementById('setup').classList.contains('open')) {
+  // mirror into setup banner if open
+  if (document.getElementById('setup-banner').style.display === 'flex') {
     document.getElementById('setup-display').textContent =
       calcExpr ? calcExpr + ' ' + calcCurrent : calcCurrent;
   }
@@ -526,7 +513,7 @@ async function calcEquals() {
   if (!raw) return;
 
   // ── SETUP MODE: accept new vault code ──
-  if (document.getElementById('setup').classList.contains('open')) {
+  if (document.getElementById('setup-banner').style.display === 'flex') {
     await registerVaultCode(raw);
     return;
   }
@@ -576,13 +563,16 @@ async function decrypt(b64, code) {
 // ══════════════════════════════════════
 function openSetup() {
   calcFunc('AC');
-  document.getElementById('setup-display').textContent = '_ _ _';
+  document.getElementById('setup-display').textContent = '– – –';
   document.getElementById('setup-status').textContent  = '';
-  document.getElementById('setup').classList.add('open');
+  document.getElementById('setup-banner').style.display = 'flex';
+  // push calculator down so banner doesn't overlap
+  document.getElementById('calculator').style.marginTop = '90px';
 }
 
 function closeSetup() {
-  document.getElementById('setup').classList.remove('open');
+  document.getElementById('setup-banner').style.display = 'none';
+  document.getElementById('calculator').style.marginTop = '';
   calcFunc('AC');
 }
 
