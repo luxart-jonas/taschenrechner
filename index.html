@@ -401,15 +401,17 @@ const ADMIN_RAW       = '1+1';               // fixed admin code (raw expression
 // ══════════════════════════════════════
 // CALCULATOR
 // ══════════════════════════════════════
-let calcExpr = '', calcCurrent = '0', calcOperator = null, calcPrev = null, calcNewNum = false;
+let calcRaw = ''; // raw string of everything typed e.g. "47+34-12"
 
 function updateDisplay() {
-  document.getElementById('result').textContent = calcCurrent;
-  document.getElementById('expr').textContent   = calcExpr;
+  // show raw string in expr, last number segment in result
+  const parts = calcRaw.split(/([+\-×÷*\/])/);
+  const last = parts[parts.length - 1] || '0';
+  document.getElementById('result').textContent = last || '0';
+  document.getElementById('expr').textContent = calcRaw;
   // mirror into setup banner if open
   if (document.getElementById('setup-banner').style.display === 'flex') {
-    document.getElementById('setup-display').textContent =
-      calcExpr ? calcExpr + ' ' + calcCurrent : calcCurrent;
+    document.getElementById('setup-display').textContent = calcRaw || '– – –';
   }
 }
 
@@ -422,7 +424,8 @@ function openPwCalc() {
   document.getElementById('pw-calc-banner').style.display = 'flex';
   document.getElementById('pw-calc-display').textContent = pwCalcValue || '–';
   document.getElementById('vault').classList.remove('open');
-  calcFunc('AC');
+  calcRaw = '';
+  updateDisplay();
 }
 
 function pwCalcDelete() {
@@ -436,7 +439,8 @@ function confirmPwCalc() {
   pwCalcValue = '';
   document.getElementById('pw-calc-banner').style.display = 'none';
   document.getElementById('vault').classList.add('open');
-  calcFunc('AC');
+  calcRaw = '';
+  updateDisplay();
 }
 
 function calcNum(n) {
@@ -445,9 +449,9 @@ function calcNum(n) {
     document.getElementById('pw-calc-display').textContent = pwCalcValue;
     return;
   }
-  if (calcNewNum) { calcCurrent = ''; calcNewNum = false; }
-  if (n === '.' && calcCurrent.includes('.')) return;
-  calcCurrent = (calcCurrent === '0' && n !== '.') ? n : calcCurrent + n;
+  if (n === '.' && calcRaw.match(/\.\d*$/)) return; // no double dot
+  if (calcRaw === '0') calcRaw = n;
+  else calcRaw += n;
   updateDisplay();
 }
 
@@ -458,10 +462,9 @@ function calcOp(op) {
     document.getElementById('pw-calc-display').textContent = pwCalcValue;
     return;
   }
-  calcPrev = parseFloat(calcCurrent);
-  calcOperator = op;
-  calcExpr = calcCurrent + ' ' + op;
-  calcNewNum = true;
+  // don't allow two operators in a row
+  if (calcRaw === '' || /[+\-×÷]$/.test(calcRaw)) return;
+  calcRaw += op;
   updateDisplay();
 }
 
@@ -471,16 +474,24 @@ function calcFunc(f) {
     document.getElementById('pw-calc-display').textContent = '–';
     return;
   }
-  if (f === 'AC')  { calcCurrent='0'; calcExpr=''; calcOperator=null; calcPrev=null; calcNewNum=false; }
-  if (f === '+/-') { calcCurrent = String(-parseFloat(calcCurrent)); }
-  if (f === '%')   { calcCurrent = String(parseFloat(calcCurrent)/100); }
-  updateDisplay();
+  if (f === 'AC')  { calcRaw = ''; updateDisplay(); }
+  if (f === '%')   {
+    // append % to last number segment
+    if (calcRaw && !/[+\-×÷%]$/.test(calcRaw)) { calcRaw += '%'; updateDisplay(); }
+  }
+  if (f === '+/-') {
+    // negate last number segment
+    const m = calcRaw.match(/^(.*[+\-×÷])(-?)(\d+\.?\d*)$/);
+    if (m) calcRaw = m[1] + (m[2] ? '' : '-') + m[3];
+    else if (calcRaw) calcRaw = calcRaw.startsWith('-') ? calcRaw.slice(1) : '-' + calcRaw;
+    updateDisplay();
+  }
 }
 
 function getRawExpr() {
-  if (calcPrev === null || !calcOperator) return null;
-  const opMap = {'÷':'/','×':'*','−':'-','+':'+'};
-  return String(calcPrev) + (opMap[calcOperator]||calcOperator) + calcCurrent;
+  // return the full raw string if it has at least one operator and one number after
+  if (/[+\-×÷]/.test(calcRaw) && !/[+\-×÷]$/.test(calcRaw)) return calcRaw;
+  return null;
 }
 
 function computeResult(a, op, b) {
@@ -497,32 +508,36 @@ async function calcEquals() {
     return;
   }
 
-  const raw = getRawExpr();
-  // show visual result first
-  if (calcPrev !== null && calcOperator) {
-    const b = parseFloat(calcCurrent);
-    const v = computeResult(calcPrev, calcOperator, b);
-    calcExpr = raw + ' =';
-    calcCurrent = isNaN(v) ? 'Fehler' : String(+v.toFixed(10));
-    calcOperator = null; calcPrev = null; calcNewNum = true;
-    updateDisplay();
-  }
+  const raw = calcRaw.trim();
   if (!raw) return;
+
+  // show result visually
+  try {
+    const expr = raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'*0.01');
+    const result = Function('"use strict"; return (' + expr + ')')();
+    document.getElementById('expr').textContent = raw + ' =';
+    document.getElementById('result').textContent = isNaN(result) ? 'Fehler' : String(+result.toFixed(10));
+  } catch(e) {
+    document.getElementById('result').textContent = 'Fehler';
+  }
 
   // ── SETUP MODE: accept new vault code ──
   if (document.getElementById('setup-banner').style.display === 'flex') {
     await registerVaultCode(raw);
+    calcRaw = '';
     return;
   }
 
   // ── ADMIN CODE: open setup ──
   if (raw === ADMIN_RAW) {
+    calcRaw = '';
     openSetup();
     return;
   }
 
   // ── VAULT CODE: try unlock ──
   await tryUnlock(raw);
+  calcRaw = '';
 }
 
 // ══════════════════════════════════════
