@@ -947,26 +947,31 @@ async function deleteEntry(table, id, storagePath=null) {
   } catch(e) { showToast('❌ '+e.message); }
 }
 
-// ── GLOBALE SUCHE ──
 function globalSearch(query) {
   const q = query.toLowerCase().trim();
   const container = document.getElementById('global-results');
   if (!q) { container.innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; return; }
 
   const pwMatches = allPasswords.filter(d =>
-    d.name.toLowerCase().includes(q) || (d.user && d.user.toLowerCase().includes(q))
+    d.name.toLowerCase().includes(q) ||
+    (d.user && d.user.toLowerCase().includes(q)) ||
+    (d.pass && d.pass.toLowerCase().includes(q))
   );
   const docMatches = allDocs.filter(d =>
-    d.name.toLowerCase().includes(q) || (d.desc && d.desc.toLowerCase().includes(q))
+    d.name.toLowerCase().includes(q) ||
+    (d.desc && d.desc.toLowerCase().includes(q))
   );
 
   container.innerHTML = '';
+
   if (!pwMatches.length && !docMatches.length) {
-    container.innerHTML='<div class="empty-state">Keine Ergebnisse</div>'; return;
+    container.innerHTML='<div class="empty-state">Keine Ergebnisse für „'+escHtml(query)+'"</div>'; return;
   }
 
   if (pwMatches.length) {
-    container.innerHTML += `<div class="section-hdr">🔑 Passwörter</div>`;
+    const hdr = document.createElement('div');
+    hdr.className='section-hdr'; hdr.textContent='🔑 Passwörter';
+    container.appendChild(hdr);
     for (const obj of pwMatches) {
       const card = document.createElement('div');
       card.className='card';
@@ -975,8 +980,8 @@ function globalSearch(query) {
           <button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
         </div>
         <div class="card-label">Name</div>
-        <div class="card-value" style="margin-bottom:4px">${escHtml(obj.name)}</div>
-        ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value">${escHtml(obj.user)}</div>`:''}`;
+        <div class="card-value" style="margin-bottom:4px">${highlight(obj.name, q)}</div>
+        ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value">${highlight(obj.user, q)}</div>`:''}`;
       container.appendChild(card);
     }
   }
@@ -985,8 +990,28 @@ function globalSearch(query) {
     const hdr = document.createElement('div');
     hdr.className='section-hdr'; hdr.textContent='📄 Dokumente';
     container.appendChild(hdr);
-    renderDocs(docMatches, container);
+    for (const obj of docMatches) {
+      const card = document.createElement('div');
+      card.className='doc-card';
+      const ext = obj.name.split('.').pop().toLowerCase();
+      const previewable = ['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
+      card.innerHTML=`
+        <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
+          <div class="doc-name">${previewable?'👁 ':'📄 '}${highlight(obj.desc || obj.name, q)}</div>
+          <div class="doc-meta">${obj.desc ? escHtml(obj.name) + ' · ' : ''}${formatSize(obj.size)}</div>
+        </div>
+        <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>`;
+      container.appendChild(card);
+    }
   }
+}
+
+// highlight matching text
+function highlight(text, q) {
+  const safe = escHtml(text);
+  const idx = safe.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return safe;
+  return safe.slice(0,idx) + `<mark style="background:#ff9f0a33;color:#ff9f0a;border-radius:2px">${safe.slice(idx, idx+q.length)}</mark>` + safe.slice(idx+q.length);
 }
 
 // ══════════════════════════════════════
@@ -995,6 +1020,12 @@ function globalSearch(query) {
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['passwords','docs','search'][i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if (name === 'search') {
+    // clear and refocus
+    const inp = document.getElementById('global-search');
+    document.getElementById('global-results').innerHTML = '<div class="empty-state">Suchbegriff eingeben…</div>';
+    setTimeout(() => inp.focus(), 100);
+  }
 }
 
 async function copyVal(v) {
