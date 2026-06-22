@@ -313,8 +313,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="overlay-content">
     <div class="vault-tabs">
       <button class="tab-btn active" onclick="switchTab('passwords')">🔑 Passwörter</button>
-      <button class="tab-btn" onclick="switchTab('notes')">📝 Notizen</button>
       <button class="tab-btn" onclick="switchTab('docs')">📄 Dokumente</button>
+      <button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>
     </div>
     <div class="vault-content">
 
@@ -341,27 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div id="pw-list"><div class="empty-state">Noch keine Einträge</div></div>
       </div>
 
-      <!-- NOTES -->
-      <div class="tab-panel" id="tab-notes">
-        <input class="field-input" id="note-search" placeholder="🔍 Notizen durchsuchen…" oninput="filterNotes(this.value)" inputmode="search" style="margin-bottom:16px">
-        <div class="add-form">
-          <div class="section-hdr">Neue Notiz</div>
-          <div class="field-row">
-            <label class="field-label">Titel</label>
-            <input class="field-input" id="note-title" placeholder="Titel…" inputmode="text" autocomplete="off">
-          </div>
-          <div class="field-row">
-            <label class="field-label">Inhalt</label>
-            <textarea class="field-input" id="note-body" placeholder="Geheimer Text…" inputmode="text"></textarea>
-          </div>
-          <button class="add-btn" id="note-save-btn" onclick="saveNote()">Speichern</button>
-        </div>
-        <div class="section-hdr">Gespeichert</div>
-        <div id="note-list"><div class="empty-state">Noch keine Einträge</div></div>
-      </div>
-
       <!-- DOCS -->
       <div class="tab-panel" id="tab-docs">
+        <input class="field-input" id="doc-search" placeholder="🔍 Dokumente durchsuchen…" oninput="filterDocs(this.value)" inputmode="search" style="margin-bottom:16px">
         <div class="add-form">
           <div class="section-hdr">Dokument hochladen</div>
           <div class="field-row">
@@ -377,13 +359,27 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <input type="file" id="file-input" style="display:none" onchange="uploadFile(this.files[0])">
         </div>
-        <input class="field-input" id="doc-search" placeholder="🔍 Dokumente durchsuchen…" oninput="filterDocs(this.value)" style="margin-bottom:12px">
         <div class="section-hdr">Gespeicherte Dokumente</div>
         <div id="doc-list"><div class="empty-state">Noch keine Dokumente</div></div>
       </div>
 
+      <!-- GLOBALE SUCHE -->
+      <div class="tab-panel" id="tab-search">
+        <input class="field-input" id="global-search" placeholder="🔍 Alles durchsuchen…" oninput="globalSearch(this.value)" inputmode="search" style="margin-bottom:16px">
+        <div id="global-results"><div class="empty-state">Suchbegriff eingeben…</div></div>
+      </div>
+
     </div>
   </div>
+</div>
+
+<!-- ═══════════ PREVIEW MODAL ═══════════ -->
+<div id="preview-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0">
+    <div id="preview-title" style="color:#f5f5f7;font-size:16px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+    <button onclick="closePreview()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation;margin-left:12px;flex-shrink:0">✕ Schließen</button>
+  </div>
+  <div id="preview-content" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 16px 16px"></div>
 </div>
 
 <div id="toast"></div>
@@ -636,7 +632,7 @@ async function tryUnlock(raw) {
 
 function openVault() {
   document.getElementById('vault').classList.add('open');
-  loadPasswords(); loadNotes(); loadDocs();
+  loadPasswords(); loadDocs();
 }
 
 function lockVault() {
@@ -841,17 +837,19 @@ async function loadDocs() {
   } catch(e) { showToast('Ladefehler: '+e.message); }
 }
 
-function renderDocs(docs) {
-  const list = document.getElementById('doc-list');
+function renderDocs(docs, container) {
+  const list = container || document.getElementById('doc-list');
   if (!docs.length) { list.innerHTML='<div class="empty-state">Keine Dokumente gefunden</div>'; return; }
   list.innerHTML='';
   for (const obj of docs) {
     const card = document.createElement('div');
     card.className='doc-card';
+    const ext = obj.name.split('.').pop().toLowerCase();
+    const previewable = ['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
     card.innerHTML=`
-      <div class="doc-info">
-        <div class="doc-name">📄 ${escHtml(obj.name)}</div>
-        <div class="doc-meta">${obj.desc ? escHtml(obj.desc) + ' · ' : ''}${formatSize(obj.size)}</div>
+      <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
+        <div class="doc-name">${previewable?'👁 ':'📄 '}${escHtml(obj.desc || obj.name)}</div>
+        <div class="doc-meta">${obj.desc ? escHtml(obj.name) + ' · ' : ''}${formatSize(obj.size)}</div>
       </div>
       <button class="icon-btn" title="Herunterladen" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>
       <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}','${escHtml(obj.path)}')">🗑</button>`;
@@ -865,6 +863,57 @@ function filterDocs(query) {
   renderDocs(allDocs.filter(d =>
     d.name.toLowerCase().includes(q) || (d.desc && d.desc.toLowerCase().includes(q))
   ));
+}
+
+// ── PREVIEW ──
+async function previewDoc(path, name) {
+  showToast('⏳ Wird geladen…');
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const key   = await deriveKey(vaultCode);
+    const dec   = await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, key, bytes.slice(12));
+    const ext   = name.split('.').pop().toLowerCase();
+
+    let mimeMap = {jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',
+      webp:'image/webp',svg:'image/svg+xml',pdf:'application/pdf',
+      html:'text/html',htm:'text/html',txt:'text/plain',
+      mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg'};
+    const mime = mimeMap[ext] || 'application/octet-stream';
+    const blob = new Blob([dec], {type: mime});
+    const url  = URL.createObjectURL(blob);
+
+    document.getElementById('preview-title').textContent = name;
+    const content = document.getElementById('preview-content');
+    content.innerHTML = '';
+
+    if (mime.startsWith('image/')) {
+      content.innerHTML = `<img src="${url}" style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px;object-fit:contain">`;
+    } else if (mime === 'application/pdf') {
+      content.innerHTML = `<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px"></iframe>`;
+    } else if (mime.startsWith('video/')) {
+      content.innerHTML = `<video src="${url}" controls style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px"></video>`;
+    } else if (mime.startsWith('audio/')) {
+      content.innerHTML = `<audio src="${url}" controls style="width:100%"></audio>`;
+    } else if (mime === 'text/plain') {
+      const text = new TextDecoder().decode(dec);
+      content.innerHTML = `<pre style="color:#f5f5f7;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.6;max-width:100%">${escHtml(text)}</pre>`;
+    } else if (mime === 'text/html') {
+      content.innerHTML = `<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px;background:#fff"></iframe>`;
+    } else {
+      content.innerHTML = `<div style="color:#6e6e73;text-align:center">Vorschau nicht verfügbar<br><br><button onclick="downloadDoc('${escHtml(path)}','${escHtml(name)}')" class="add-btn" style="width:auto;padding:10px 20px">⬇️ Herunterladen</button></div>`;
+    }
+
+    document.getElementById('preview-modal').style.display = 'flex';
+  } catch(e) { showToast('❌ '+e.message); }
+}
+
+function closePreview() {
+  document.getElementById('preview-modal').style.display = 'none';
+  document.getElementById('preview-content').innerHTML = '';
 }
 
 async function downloadDoc(path, name) {
@@ -894,16 +943,57 @@ async function deleteEntry(table, id, storagePath=null) {
     });
     showToast('🗑 Gelöscht');
     if (table==='passwords') loadPasswords();
-    else if (table==='notes') loadNotes();
     else loadDocs();
   } catch(e) { showToast('❌ '+e.message); }
+}
+
+// ── GLOBALE SUCHE ──
+function globalSearch(query) {
+  const q = query.toLowerCase().trim();
+  const container = document.getElementById('global-results');
+  if (!q) { container.innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; return; }
+
+  const pwMatches = allPasswords.filter(d =>
+    d.name.toLowerCase().includes(q) || (d.user && d.user.toLowerCase().includes(q))
+  );
+  const docMatches = allDocs.filter(d =>
+    d.name.toLowerCase().includes(q) || (d.desc && d.desc.toLowerCase().includes(q))
+  );
+
+  container.innerHTML = '';
+  if (!pwMatches.length && !docMatches.length) {
+    container.innerHTML='<div class="empty-state">Keine Ergebnisse</div>'; return;
+  }
+
+  if (pwMatches.length) {
+    container.innerHTML += `<div class="section-hdr">🔑 Passwörter</div>`;
+    for (const obj of pwMatches) {
+      const card = document.createElement('div');
+      card.className='card';
+      card.innerHTML=`
+        <div class="card-actions">
+          <button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
+        </div>
+        <div class="card-label">Name</div>
+        <div class="card-value" style="margin-bottom:4px">${escHtml(obj.name)}</div>
+        ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value">${escHtml(obj.user)}</div>`:''}`;
+      container.appendChild(card);
+    }
+  }
+
+  if (docMatches.length) {
+    const hdr = document.createElement('div');
+    hdr.className='section-hdr'; hdr.textContent='📄 Dokumente';
+    container.appendChild(hdr);
+    renderDocs(docMatches, container);
+  }
 }
 
 // ══════════════════════════════════════
 // UI HELPERS
 // ══════════════════════════════════════
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['passwords','notes','docs'][i]===name));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['passwords','docs','search'][i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
 }
 
