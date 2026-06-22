@@ -294,14 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ═══════════ SETUP BANNER ═══════════ -->
-<div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#ff9f0a;padding:14px 20px;flex-direction:column;align-items:center;gap:8px">
-  <div style="color:#fff;font-size:15px;font-weight:600">⚙️ Tresor einrichten</div>
-  <input id="setup-username" placeholder="Benutzername wählen…" autocomplete="off" autocorrect="off" autocapitalize="off"
-    style="width:100%;max-width:280px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:15px;outline:none;text-align:center"
-    oninput="document.getElementById('setup-username-hint').textContent=this.value?'':'← Pflichtfeld'">
-  <div id="setup-username-hint" style="color:rgba(255,255,255,0.7);font-size:11px;height:14px"></div>
-  <div style="color:rgba(255,255,255,0.9);font-size:13px">Dann Code im Rechner eingeben &amp; = drücken</div>
+<!-- ═══════════ SETUP BANNER (kein Overlay mehr, Rechner bleibt sichtbar) ═══════════ -->
+<div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#ff9f0a;padding:14px 20px;flex-direction:column;align-items:center;gap:6px">
+  <div style="color:#fff;font-size:15px;font-weight:600">⚙️ Neuen Code eingeben &amp; = drücken</div>
   <div style="display:flex;gap:8px;align-items:center">
     <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 20px;color:#fff;font-size:20px;font-family:monospace;min-width:120px;text-align:center" id="setup-display">– – –</div>
     <button onclick="closeSetup()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">✕</button>
@@ -396,12 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
 const SUPABASE_URL    = 'https://ormpszktwwiahjooukjk.supabase.co';
 const SUPABASE_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ybXBzemt0d3dpYWhqb291a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzM5NTAsImV4cCI6MjA5NjQ0OTk1MH0.Jz4rKTlrvRbfdxS1e8fRkwXeD3CJsITeC6Q4lDBjfCc';
 const STORAGE_BUCKET  = 'tresor-docs';
-const VAULT_CODE_KEY  = 'tresor_vault_hash';
-const USERNAME_KEY    = 'tresor_username';
-const ADMIN_RAW       = '1+1';
-
-// Benutzername — wird einmalig beim Setup vergeben
-function getUsername() { return localStorage.getItem(USERNAME_KEY) || null; }
+const VAULT_CODE_KEY  = 'tresor_vault_hash'; // hash of user's chosen code
+const ADMIN_RAW       = '1+1';               // fixed admin code (raw expression)
 
 // ══════════════════════════════════════
 // CALCULATOR
@@ -579,43 +570,32 @@ async function decrypt(b64, code) {
 // SETUP
 // ══════════════════════════════════════
 function openSetup() {
-  calcRaw = '';
-  updateDisplay();
+  calcFunc('AC');
   document.getElementById('setup-display').textContent = '– – –';
   document.getElementById('setup-status').textContent  = '';
-  const existing = getUsername();
-  const inp = document.getElementById('setup-username');
-  inp.value = existing || '';
-  inp.placeholder = existing ? 'Benutzername ändern…' : 'Benutzername wählen…';
   document.getElementById('setup-banner').style.display = 'flex';
-  document.getElementById('calculator').style.marginTop = '200px';
-  setTimeout(() => inp.focus(), 100);
+  // push calculator down so banner doesn't overlap
+  document.getElementById('calculator').style.marginTop = '90px';
 }
 
 function closeSetup() {
   document.getElementById('setup-banner').style.display = 'none';
   document.getElementById('calculator').style.marginTop = '';
-  calcRaw = '';
-  updateDisplay();
+  calcFunc('AC');
 }
 
 async function registerVaultCode(raw) {
-  const username = document.getElementById('setup-username').value.trim();
-  if (!username) {
-    document.getElementById('setup-username-hint').textContent = '← Bitte Benutzername eingeben!';
-    return;
-  }
   if (raw === ADMIN_RAW) {
     document.getElementById('setup-status').textContent = '❌ Dieser Code ist reserviert. Anderen wählen.';
     return;
   }
-  localStorage.setItem(USERNAME_KEY, username);
   const hash = await sha256(raw);
   localStorage.setItem(VAULT_CODE_KEY, hash);
-  document.getElementById('setup-status').textContent = '✅ Gespeichert!';
-  showToast('✅ Willkommen, ' + username + '!');
+  document.getElementById('setup-status').textContent = '✅ Code gespeichert!';
+  showToast('✅ Neuer Code gespeichert');
   setTimeout(() => {
     closeSetup();
+    // directly open vault with new code
     vaultCode = raw;
     openVault();
   }, 800);
@@ -651,8 +631,6 @@ async function tryUnlock(raw) {
 }
 
 function openVault() {
-  const username = getUsername();
-  document.querySelector('.overlay-title').textContent = '🔐 ' + (username || 'Tresor');
   document.getElementById('vault').classList.add('open');
   loadPasswords(); loadDocs();
 }
@@ -691,7 +669,7 @@ async function savePassword() {
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Speichern…';
   try {
     const enc = await encrypt(JSON.stringify({name,user,pass}), vaultCode);
-    await sbFetch('/rest/v1/tresor_passwords', {method:'POST', body:JSON.stringify({data:enc, username:getUsername()})});
+    await sbFetch('/rest/v1/tresor_passwords', {method:'POST', body:JSON.stringify({data:enc})});
     document.getElementById('pw-name').value='';
     document.getElementById('pw-user').value='';
     document.getElementById('pw-pass').value='';
@@ -704,8 +682,7 @@ let allPasswords = [];
 
 async function loadPasswords() {
   try {
-    const u = getUsername();
-    const rows = await sbFetch(`/rest/v1/tresor_passwords?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&order=created_at.desc`);
+    const rows = await sbFetch('/rest/v1/tresor_passwords?select=id,data,created_at&order=created_at.desc');
     allPasswords = [];
     for (const row of rows) {
       try {
@@ -835,7 +812,7 @@ async function uploadFile(file) {
     fill.style.width='75%';
     if (!res.ok) throw new Error(await res.text());
     const meta = await encrypt(JSON.stringify({name:file.name, desc, size:file.size, path}), vaultCode);
-    await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta, username:getUsername()})});
+    await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta})});
     fill.style.width='100%';
     setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},600);
     showToast('✅ Hochgeladen');
@@ -848,8 +825,7 @@ async function uploadFile(file) {
 
 async function loadDocs() {
   try {
-    const u = getUsername();
-    const rows = await sbFetch(`/rest/v1/tresor_docs?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&order=created_at.desc`);
+    const rows = await sbFetch('/rest/v1/tresor_docs?select=id,data,created_at&order=created_at.desc');
     allDocs = [];
     for (const row of rows) {
       try {
