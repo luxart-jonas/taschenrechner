@@ -10,262 +10,131 @@
 <meta name="theme-color" content="#2c2c2e">
 <title>Rechner</title>
 <script>
-// Inline SVG icon as data URL for manifest
 const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 380"><rect width="380" height="380" rx="80" fill="#1c1c1e"/><rect x="36" y="36" width="308" height="100" rx="20" fill="#2c2c2e"/><text x="322" y="108" text-anchor="end" font-family="-apple-system,Helvetica Neue,sans-serif" font-size="46" font-weight="200" fill="#f5f5f7">Rechner</text><rect x="36" y="158" width="64" height="50" rx="25" fill="#3a3a3c"/><rect x="110" y="158" width="64" height="50" rx="25" fill="#3a3a3c"/><rect x="184" y="158" width="64" height="50" rx="25" fill="#3a3a3c"/><rect x="258" y="158" width="86" height="50" rx="25" fill="#ff9f0a"/><rect x="36" y="220" width="64" height="50" rx="25" fill="#48484a"/><rect x="110" y="220" width="64" height="50" rx="25" fill="#48484a"/><rect x="184" y="220" width="64" height="50" rx="25" fill="#48484a"/><rect x="258" y="220" width="86" height="50" rx="25" fill="#ff9f0a"/><rect x="36" y="282" width="64" height="50" rx="25" fill="#48484a"/><rect x="110" y="282" width="64" height="50" rx="25" fill="#48484a"/><rect x="184" y="282" width="64" height="50" rx="25" fill="#48484a"/><rect x="258" y="282" width="86" height="50" rx="25" fill="#ff9f0a"/><rect x="36" y="336" width="138" height="32" rx="16" fill="#48484a"/><rect x="184" y="336" width="64" height="32" rx="16" fill="#48484a"/><rect x="258" y="336" width="86" height="32" rx="16" fill="#ff9f0a"/></svg>`;
 const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(iconSvg);
-const manifest = {
-  name: 'Rechner',
-  short_name: 'Rechner',
-  start_url: window.location.href,
-  display: 'standalone',
-  background_color: '#2c2c2e',
-  theme_color: '#2c2c2e',
-  icons: [
-    { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-  ]
-};
-const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+const manifest = { name:'Rechner', short_name:'Rechner', start_url:window.location.href, display:'standalone', background_color:'#2c2c2e', theme_color:'#2c2c2e', icons:[{src:iconUrl,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}] };
+const blob = new Blob([JSON.stringify(manifest)],{type:'application/json'});
 const manifestUrl = URL.createObjectURL(blob);
-document.addEventListener('DOMContentLoaded', () => {
-  const link = document.createElement('link');
-  link.rel = 'manifest'; link.href = manifestUrl;
-  document.head.appendChild(link);
-  const icon = document.createElement('link');
-  icon.rel = 'apple-touch-icon'; icon.href = iconUrl;
-  document.head.appendChild(icon);
+document.addEventListener('DOMContentLoaded',()=>{
+  const l=document.createElement('link'); l.rel='manifest'; l.href=manifestUrl; document.head.appendChild(l);
+  const i=document.createElement('link'); i.rel='apple-touch-icon'; i.href=iconUrl; document.head.appendChild(i);
 });
 </script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #1a1a1a;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#1a1a1a; display:flex; justify-content:center; align-items:center; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
 
-  /* ── CALCULATOR ── */
-  #calculator {
-    background: #2c2c2e;
-    border-radius: 28px;
-    padding: 20px;
-    width: 320px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
-  }
-  #display {
-    background: #1c1c1e;
-    border-radius: 16px;
-    padding: 16px 20px 12px;
-    margin-bottom: 16px;
-    min-height: 90px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: flex-end;
-  }
-  #display .expr   { color: #6e6e73; font-size: 15px; min-height: 20px; word-break: break-all; }
-  #display .result { color: #f5f5f7; font-size: 40px; font-weight: 300; letter-spacing: -1px; word-break: break-all; }
+/* CALCULATOR */
+#calculator { background:#2c2c2e; border-radius:28px; padding:20px; width:320px; box-shadow:0 20px 60px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.08); }
+#display { background:#1c1c1e; border-radius:16px; padding:16px 20px 12px; margin-bottom:16px; min-height:90px; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-end; }
+#display .expr { color:#6e6e73; font-size:15px; min-height:20px; word-break:break-all; }
+#display .result { color:#f5f5f7; font-size:40px; font-weight:300; letter-spacing:-1px; word-break:break-all; }
+.btn-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.btn { border:none; border-radius:50%; width:66px; height:66px; font-size:22px; font-weight:400; transition:filter 0.1s,transform 0.08s; outline:none; user-select:none; cursor:pointer; }
+.btn:active { transform:scale(0.94); filter:brightness(1.2); }
+.btn-func { background:#3a3a3c; color:#f5f5f7; }
+.btn-op   { background:#ff9f0a; color:#fff; font-size:26px; }
+.btn-num  { background:#48484a; color:#f5f5f7; }
+.btn-zero { border-radius:34px; width:100%; grid-column:span 2; justify-self:stretch; text-align:left; padding-left:24px; }
+.btn-eq   { background:#ff9f0a; color:#fff; font-size:26px; }
+@keyframes flash-green { 0%,100%{background:#2c2c2e} 50%{background:#1a3a2a} }
+@keyframes flash-red   { 0%,100%{background:#2c2c2e} 50%{background:#3a1a1a} }
+.flash-ok  { animation:flash-green 0.4s ease; }
+.flash-err { animation:flash-red   0.4s ease; }
 
-  .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .btn {
-    border: none; border-radius: 50%;
-    width: 66px; height: 66px;
-    font-size: 22px; font-weight: 400;
-     transition: filter 0.1s, transform 0.08s;
-    outline: none; user-select: none;
-  }
-  .btn:active { transform: scale(0.94); filter: brightness(1.2); }
-  .btn-func { background: #3a3a3c; color: #f5f5f7; }
-  .btn-op   { background: #ff9f0a; color: #fff; font-size: 26px; }
-  .btn-num  { background: #48484a; color: #f5f5f7; }
-  .btn-zero { border-radius: 34px; width: 100%; grid-column: span 2; justify-self: stretch; text-align: left; padding-left: 24px; }
-  .btn-eq   { background: #ff9f0a; color: #fff; font-size: 26px; }
+/* OVERLAY */
+.overlay { display:none; position:fixed; inset:0; background:#0f0f10; flex-direction:column; overflow:hidden; }
+.overlay.open { display:flex; }
+.overlay-header { background:#1c1c1e; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #2c2c2e; flex-shrink:0; gap:12px; }
+.overlay-title { color:#f5f5f7; font-size:17px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lock-btn { background:none; border:1px solid #3a3a3c; color:#6e6e73; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+.lock-btn:hover { border-color:#ff9f0a; color:#ff9f0a; }
+.overlay-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 
-  @keyframes flash-green { 0%,100%{background:#2c2c2e} 50%{background:#1a3a2a} }
-  @keyframes flash-red   { 0%,100%{background:#2c2c2e} 50%{background:#3a1a1a} }
-  .flash-ok  { animation: flash-green 0.4s ease; }
-  .flash-err { animation: flash-red   0.4s ease; }
+/* TABS */
+.vault-tabs { display:flex; background:#1c1c1e; padding:0 8px; border-bottom:1px solid #2c2c2e; flex-shrink:0; overflow-x:auto; }
+.tab-btn { background:none; border:none; color:#6e6e73; padding:12px 14px; font-size:13px; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; white-space:nowrap; }
+.tab-btn.active { color:#ff9f0a; border-bottom-color:#ff9f0a; }
+.vault-content { flex:1; overflow-y:auto; padding:16px; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
 
-  /* ── OVERLAY (setup + vault) ── */
-  .overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #0f0f10;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .overlay.open { display: flex; }
+/* CARDS */
+.card { background:#1c1c1e; border-radius:14px; padding:16px; margin-bottom:12px; border:1px solid #2c2c2e; position:relative; }
+.card-label { color:#6e6e73; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px; }
+.card-value { color:#f5f5f7; font-size:15px; word-break:break-all; }
+.card-actions { position:absolute; top:12px; right:12px; display:flex; gap:6px; }
+.icon-btn { background:#2c2c2e; border:none; border-radius:6px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#6e6e73; font-size:13px; transition:all 0.15s; touch-action:manipulation; }
+.icon-btn:hover { background:#3a3a3c; color:#f5f5f7; }
+.icon-btn.danger:hover { background:#3a1a1a; color:#ff453a; }
 
-  .overlay-header {
-    background: #1c1c1e;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #2c2c2e;
-    flex-shrink: 0;
-  }
-  .overlay-title { color: #f5f5f7; font-size: 18px; font-weight: 600; }
-  .lock-btn {
-    background: none; border: 1px solid #3a3a3c;
-    color: #6e6e73; border-radius: 8px;
-    padding: 6px 12px; font-size: 13px;  transition: all 0.15s;
-  }
-  .lock-btn:hover { border-color: #ff9f0a; color: #ff9f0a; }
+/* FORMS */
+.add-form { background:#1c1c1e; border-radius:14px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2e; }
+.field-row { margin-bottom:10px; }
+.field-label { color:#6e6e73; font-size:12px; margin-bottom:4px; display:block; }
+.field-input { width:100%; background:#2c2c2e; border:1px solid #3a3a3c; border-radius:8px; padding:12px 14px; color:#f5f5f7; font-size:16px; outline:none; transition:border-color 0.15s; -webkit-appearance:none; appearance:none; cursor:text; touch-action:manipulation; }
+.field-input:focus { border-color:#ff9f0a; }
+textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
+.add-btn { background:#ff9f0a; border:none; border-radius:8px; padding:14px 16px; color:#fff; font-size:16px; font-weight:600; transition:filter 0.15s; width:100%; touch-action:manipulation; cursor:pointer; }
+.add-btn:hover { filter:brightness(1.1); }
+.add-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.sec-btn { background:#2c2c2e; border:1px solid #3a3a3c; border-radius:8px; padding:10px 16px; color:#f5f5f7; font-size:14px; cursor:pointer; touch-action:manipulation; transition:all 0.15s; }
+.sec-btn:hover { border-color:#ff9f0a; color:#ff9f0a; }
 
-  /* ── SETUP SCREEN ── */
-  #setup .overlay-content {
-    flex: 1; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; padding: 40px 30px; gap: 20px;
-  }
-  .setup-info {
-    color: #6e6e73; font-size: 14px; text-align: center; line-height: 1.6; max-width: 260px;
-  }
-  .setup-info b { color: #f5f5f7; }
-  .setup-calc-preview {
-    background: #1c1c1e; border-radius: 14px;
-    padding: 16px 24px; text-align: center;
-    border: 1px solid #2c2c2e; width: 100%; max-width: 280px;
-  }
-  .setup-label { color: #6e6e73; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
-  .setup-input-display {
-    color: #ff9f0a; font-size: 28px; font-weight: 300;
-    font-family: 'SF Mono', monospace; min-height: 38px;
-    letter-spacing: 2px;
-  }
-  .setup-hint { color: #3a3a3c; font-size: 12px; margin-top: 6px; }
-  .setup-status {
-    font-size: 13px; color: #6e6e73; min-height: 20px; text-align: center;
-  }
+/* DOCS */
+.upload-zone { border:2px dashed #3a3a3c; border-radius:14px; padding:24px; text-align:center; color:#6e6e73; cursor:pointer; transition:all 0.2s; margin-bottom:12px; }
+.upload-zone:hover,.upload-zone.drag-over { border-color:#ff9f0a; color:#ff9f0a; background:rgba(255,159,10,0.05); }
+.upload-icon { font-size:28px; margin-bottom:6px; }
+.doc-card { background:#1c1c1e; border-radius:12px; padding:12px 16px; margin-bottom:8px; border:1px solid #2c2c2e; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.doc-info { flex:1; min-width:0; }
+.doc-name { color:#f5f5f7; font-size:16px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.doc-meta { color:#ff9f0a; font-size:12px; margin-top:2px; }
+.progress-bar { height:3px; background:#2c2c2e; border-radius:2px; overflow:hidden; margin-top:8px; }
+.progress-fill { height:100%; background:#ff9f0a; border-radius:2px; width:0%; transition:width 0.3s; }
 
-  /* ── VAULT TABS ── */
-  .vault-tabs {
-    display: flex; background: #1c1c1e;
-    padding: 0 20px; border-bottom: 1px solid #2c2c2e; flex-shrink: 0;
-  }
-  .tab-btn {
-    background: none; border: none; color: #6e6e73;
-    padding: 12px 16px; font-size: 14px; 
-    border-bottom: 2px solid transparent; transition: all 0.15s;
-  }
-  .tab-btn.active { color: #ff9f0a; border-bottom-color: #ff9f0a; }
+/* FOLDERS */
+.folder-card { background:#1c1c1e; border-radius:14px; padding:18px 16px; margin-bottom:10px; border:1px solid #2c2c2e; display:flex; align-items:center; gap:14px; cursor:pointer; transition:border-color 0.15s; position:relative; }
+.folder-card:hover { border-color:#ff9f0a; }
+.folder-icon { font-size:32px; flex-shrink:0; }
+.folder-info { flex:1; min-width:0; }
+.folder-name { color:#f5f5f7; font-size:17px; font-weight:600; }
+.folder-meta { color:#6e6e73; font-size:12px; margin-top:2px; }
+.folder-actions { display:flex; gap:6px; flex-shrink:0; }
 
-  .vault-content { flex: 1; overflow-y: auto; padding: 20px; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+/* MISC */
+.section-hdr { color:#6e6e73; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; margin:16px 0 8px; }
+.section-hdr:first-child { margin-top:0; }
+.empty-state { text-align:center; color:#3a3a3c; padding:32px 20px; font-size:14px; }
+.spinner { display:inline-block; width:14px; height:14px; border:2px solid #3a3a3c; border-top-color:#ff9f0a; border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px); background:#1c1c1e; color:#f5f5f7; padding:10px 20px; border-radius:20px; font-size:13px; opacity:0; pointer-events:none; transition:all 0.3s; border:1px solid #3a3a3c; white-space:nowrap; z-index:9999; }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.back-btn { background:none; border:none; color:#ff9f0a; font-size:14px; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px; flex-shrink:0; }
 
-  /* ── CARDS ── */
-  .card {
-    background: #1c1c1e; border-radius: 14px;
-    padding: 16px; margin-bottom: 12px;
-    border: 1px solid #2c2c2e; position: relative;
-  }
-  .card-label { color: #6e6e73; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-  .card-value { color: #f5f5f7; font-size: 15px; word-break: break-all; }
-  .card-pass {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-      
-  }
-  
-  .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
-  .icon-btn {
-    background: #2c2c2e; border: none; border-radius: 6px;
-    width: 28px; height: 28px; display: flex; align-items: center;
-    justify-content: center;  color: #6e6e73;
-    font-size: 13px; transition: all 0.15s;
-  }
-  .icon-btn:hover { background: #3a3a3c; color: #f5f5f7; }
-  .icon-btn.danger:hover { background: #3a1a1a; color: #ff453a; }
-
-  /* ── FORMS ── */
-  .add-form {
-    background: #1c1c1e; border-radius: 14px;
-    padding: 16px; margin-bottom: 20px; border: 1px solid #2c2c2e;
-  }
-  .field-row { margin-bottom: 10px; }
-  .field-label { color: #6e6e73; font-size: 12px; margin-bottom: 4px; display: block; }
-  .field-input {
-    width: 100%; background: #2c2c2e; border: 1px solid #3a3a3c;
-    border-radius: 8px; padding: 12px 14px; color: #f5f5f7;
-    font-size: 16px; outline: none; transition: border-color 0.15s;
-    -webkit-appearance: none; appearance: none;
-    cursor: text; touch-action: manipulation;
-  }
-  .field-input:focus { border-color: #ff9f0a; }
-  textarea.field-input { resize: vertical; min-height: 80px; font-family: inherit; }
-  .add-btn {
-    background: #ff9f0a; border: none; border-radius: 8px;
-    padding: 14px 16px; color: #fff; font-size: 16px;
-    font-weight: 600; transition: filter 0.15s; width: 100%;
-    touch-action: manipulation; cursor: pointer;
-  }
-  .add-btn:hover { filter: brightness(1.1); }
-  .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  /* ── DOCS ── */
-  .upload-zone {
-    border: 2px dashed #3a3a3c; border-radius: 14px;
-    padding: 32px; text-align: center; color: #6e6e73;
-     transition: all 0.2s; margin-bottom: 16px;
-  }
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: #ff9f0a; color: #ff9f0a; background: rgba(255,159,10,0.05);
-  }
-  .upload-icon { font-size: 32px; margin-bottom: 8px; }
-  .doc-card {
-    background: #1c1c1e; border-radius: 12px;
-    padding: 12px 16px; margin-bottom: 8px; border: 1px solid #2c2c2e;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
-  .doc-info { flex: 1; min-width: 0; }
-  .doc-name { color: #f5f5f7; font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .doc-meta { color: #ff9f0a; font-size: 13px; margin-top: 3px; }
-  .progress-bar { height: 3px; background: #2c2c2e; border-radius: 2px; overflow: hidden; margin-top: 8px; }
-  .progress-fill { height: 100%; background: #ff9f0a; border-radius: 2px; width: 0%; transition: width 0.3s; }
-
-  .section-hdr {
-    color: #6e6e73; font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.6px; margin: 20px 0 10px;
-  }
-  .section-hdr:first-child { margin-top: 0; }
-
-  .empty-state { text-align: center; color: #3a3a3c; padding: 40px 20px; font-size: 14px; }
-  .spinner {
-    display: inline-block; width: 14px; height: 14px;
-    border: 2px solid #3a3a3c; border-top-color: #ff9f0a;
-    border-radius: 50%; animation: spin 0.6s linear infinite;
-    vertical-align: middle; margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  #toast {
-    position: fixed; bottom: 30px; left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: #1c1c1e; color: #f5f5f7;
-    padding: 10px 20px; border-radius: 20px; font-size: 13px;
-    opacity: 0; pointer-events: none; transition: all 0.3s;
-    border: 1px solid #3a3a3c; white-space: nowrap; z-index: 9999;
-  }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  .overlay-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+/* COPY MODAL */
+#copy-modal { display:none; position:fixed; inset:0; z-index:9997; background:rgba(0,0,0,0.8); align-items:flex-end; }
+#copy-modal.open { display:flex; }
+.copy-sheet { background:#2c2c2e; width:100%; border-radius:24px 24px 0 0; padding:20px; max-width:480px; margin:0 auto; }
+.copy-folder-btn { background:#1c1c1e; border:1px solid #3a3a3c; border-radius:12px; padding:14px 16px; margin-bottom:8px; width:100%; text-align:left; color:#f5f5f7; font-size:15px; cursor:pointer; display:flex; align-items:center; gap:10px; transition:border-color 0.15s; }
+.copy-folder-btn:hover { border-color:#ff9f0a; }
 </style>
 </head>
 <body>
 
-<!-- ═══════════ CALCULATOR ═══════════ -->
-<!-- PW MODE BANNER -->
-<div id="pw-calc-banner" style="display:none;background:#ff9f0a;padding:12px 20px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:100;flex-direction:column;gap:6px">
-  <div style="color:#fff;font-size:14px;font-weight:600">Passwort eingeben → dann ✓ tippen</div>
-  <div style="display:flex;gap:8px;justify-content:center;align-items:center">
-    <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 16px;color:#fff;font-size:18px;font-family:monospace;min-width:160px;text-align:center" id="pw-calc-display">–</div>
-    <button onclick="pwCalcDelete()" style="background:rgba(0,0,0,0.2);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:16px;cursor:pointer;touch-action:manipulation">⌫</button>
-    <button onclick="confirmPwCalc()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:16px;font-weight:700;cursor:pointer;touch-action:manipulation">✓</button>
+<!-- SETUP BANNER -->
+<div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#ff9f0a;padding:14px 20px;flex-direction:column;align-items:center;gap:8px">
+  <div style="color:#fff;font-size:15px;font-weight:600">⚙️ Tresor einrichten</div>
+  <input id="setup-username" placeholder="Benutzername wählen…" autocomplete="off" autocorrect="off" autocapitalize="off"
+    style="width:100%;max-width:280px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:15px;outline:none;text-align:center">
+  <div style="color:rgba(255,255,255,0.9);font-size:13px">Dann Code im Rechner eingeben &amp; = drücken</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 20px;color:#fff;font-size:20px;font-family:monospace;min-width:120px;text-align:center" id="setup-display">– – –</div>
+    <button onclick="closeSetup()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">✕</button>
   </div>
+  <div style="color:rgba(255,255,255,0.8);font-size:12px" id="setup-status"></div>
 </div>
+
+<!-- CALCULATOR -->
 <div id="calculator">
   <div id="display">
     <div class="expr" id="expr"></div>
@@ -294,76 +163,87 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ═══════════ SETUP BANNER (kein Overlay mehr, Rechner bleibt sichtbar) ═══════════ -->
-<div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#ff9f0a;padding:14px 20px;flex-direction:column;align-items:center;gap:6px">
-  <div style="color:#fff;font-size:15px;font-weight:600">⚙️ Neuen Code eingeben &amp; = drücken</div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 20px;color:#fff;font-size:20px;font-family:monospace;min-width:120px;text-align:center" id="setup-display">– – –</div>
-    <button onclick="closeSetup()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">✕</button>
-  </div>
-  <div style="color:rgba(255,255,255,0.8);font-size:12px" id="setup-status"></div>
-</div>
-
-<!-- ═══════════ VAULT OVERLAY ═══════════ -->
+<!-- VAULT -->
 <div class="overlay" id="vault">
   <div class="overlay-header">
-    <div class="overlay-title">🔐 Tresor</div>
+    <button class="back-btn" id="back-btn" onclick="goBack()" style="display:none">◀ Zurück</button>
+    <div class="overlay-title" id="vault-title">🔐 Tresor</div>
     <button class="lock-btn" onclick="lockVault()">Sperren</button>
   </div>
   <div class="overlay-content">
-    <div class="vault-tabs">
-      <button class="tab-btn active" onclick="switchTab('passwords')">🔑 Passwörter</button>
-      <button class="tab-btn" onclick="switchTab('docs')">📄 Dokumente</button>
+    <div class="vault-tabs" id="vault-tabs">
+      <button class="tab-btn active" onclick="switchTab('folders')">📁 Ordner</button>
       <button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>
     </div>
     <div class="vault-content">
 
-      <!-- PASSWORDS -->
-      <div class="tab-panel active" id="tab-passwords">
-        <input class="field-input" id="pw-search" placeholder="🔍 Passwörter durchsuchen…" oninput="filterPasswords(this.value)" inputmode="search" style="margin-bottom:16px">
+      <!-- FOLDERS TAB -->
+      <div class="tab-panel active" id="tab-folders">
         <div class="add-form">
-          <div class="section-hdr">Neues Passwort</div>
-          <div class="field-row">
-            <label class="field-label">Name / Website</label>
-            <input class="field-input" id="pw-name" placeholder="z.B. Google, Netflix…" inputmode="text" autocomplete="off">
+          <div class="section-hdr">Neuer Ordner</div>
+          <div style="display:flex;gap:8px">
+            <input class="field-input" id="folder-name-input" placeholder="Ordnername…" style="flex:1" autocomplete="off">
+            <button class="add-btn" style="width:auto;padding:14px 20px" onclick="createFolder()">+</button>
           </div>
-          <div class="field-row">
-            <label class="field-label">Benutzername / E-Mail</label>
-            <input class="field-input" id="pw-user" placeholder="user@example.com" inputmode="email" autocomplete="off">
-          </div>
-          <div class="field-row">
-            <label class="field-label">Passwort</label>
-            <input class="field-input" id="pw-pass" type="text" placeholder="Rechner" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-          </div>
-          <button class="add-btn" id="pw-save-btn" onclick="savePassword()">Speichern</button>
         </div>
-        <div class="section-hdr">Gespeichert</div>
-        <div id="pw-list"><div class="empty-state">Noch keine Einträge</div></div>
+        <div class="section-hdr">Meine Ordner</div>
+        <div id="folder-list"><div class="empty-state">Noch keine Ordner</div></div>
       </div>
 
-      <!-- DOCS -->
-      <div class="tab-panel" id="tab-docs">
-        <input class="field-input" id="doc-search" placeholder="🔍 Dokumente durchsuchen…" oninput="filterDocs(this.value)" inputmode="search" style="margin-bottom:16px">
-        <div class="add-form">
-          <div class="section-hdr">Dokument hochladen</div>
-          <div class="field-row">
-            <label class="field-label">Beschreibung</label>
-            <input class="field-input" id="doc-desc" placeholder="z.B. Debeka Versicherung, Reisepass…" inputmode="text" autocomplete="off">
-          </div>
-          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-            <div class="upload-icon">📎</div>
-            <div>Datei auswählen oder hierher ziehen</div>
-            <div class="progress-bar" id="upload-progress-bar" style="display:none">
-              <div class="progress-fill" id="upload-progress-fill"></div>
+      <!-- FOLDER DETAIL (passwords + docs inside folder) -->
+      <div class="tab-panel" id="tab-folder-detail">
+        <div class="vault-tabs" style="margin:-16px -16px 16px;border-bottom:1px solid #2c2c2e;border-top:1px solid #2c2c2e">
+          <button class="tab-btn active" id="inner-pw-tab" onclick="switchInnerTab('passwords')">🔑 Passwörter</button>
+          <button class="tab-btn" id="inner-doc-tab" onclick="switchInnerTab('docs')">📄 Dokumente</button>
+        </div>
+
+        <!-- inner passwords -->
+        <div id="inner-passwords">
+          <input class="field-input" id="pw-search" placeholder="🔍 Passwörter durchsuchen…" oninput="filterPasswords(this.value)" inputmode="search" style="margin-bottom:12px">
+          <div class="add-form">
+            <div class="section-hdr">Neues Passwort</div>
+            <div class="field-row">
+              <label class="field-label">Name / Website</label>
+              <input class="field-input" id="pw-name" placeholder="z.B. Google, Netflix…" inputmode="text" autocomplete="off">
             </div>
+            <div class="field-row">
+              <label class="field-label">Benutzername / E-Mail</label>
+              <input class="field-input" id="pw-user" placeholder="user@example.com" inputmode="email" autocomplete="off">
+            </div>
+            <div class="field-row">
+              <label class="field-label">Passwort</label>
+              <input class="field-input" id="pw-pass" type="text" placeholder="Passwort eingeben" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            </div>
+            <button class="add-btn" id="pw-save-btn" onclick="savePassword()">Speichern</button>
           </div>
-          <input type="file" id="file-input" style="display:none" onchange="uploadFile(this.files[0])">
+          <div class="section-hdr">Gespeichert</div>
+          <div id="pw-list"><div class="empty-state">Noch keine Einträge</div></div>
         </div>
-        <div class="section-hdr">Gespeicherte Dokumente</div>
-        <div id="doc-list"><div class="empty-state">Noch keine Dokumente</div></div>
+
+        <!-- inner docs -->
+        <div id="inner-docs" style="display:none">
+          <input class="field-input" id="doc-search" placeholder="🔍 Dokumente durchsuchen…" oninput="filterDocs(this.value)" inputmode="search" style="margin-bottom:12px">
+          <div class="add-form">
+            <div class="section-hdr">Dokument hochladen</div>
+            <div class="field-row">
+              <label class="field-label">Beschreibung</label>
+              <input class="field-input" id="doc-desc" placeholder="z.B. Debeka Versicherung…" inputmode="text" autocomplete="off">
+            </div>
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+              <div class="upload-icon">📎</div>
+              <div>Datei auswählen oder hierher ziehen</div>
+              <div class="progress-bar" id="upload-progress-bar" style="display:none">
+                <div class="progress-fill" id="upload-progress-fill"></div>
+              </div>
+            </div>
+            <input type="file" id="file-input" style="display:none" onchange="uploadFile(this.files[0])">
+          </div>
+          <div class="section-hdr">Gespeichert</div>
+          <div id="doc-list"><div class="empty-state">Noch keine Dokumente</div></div>
+        </div>
       </div>
 
-      <!-- GLOBALE SUCHE -->
+      <!-- SEARCH TAB -->
       <div class="tab-panel" id="tab-search">
         <input class="field-input" id="global-search" placeholder="🔍 Alles durchsuchen…" oninput="globalSearch(this.value)" inputmode="search" style="margin-bottom:16px">
         <div id="global-results"><div class="empty-state">Suchbegriff eingeben…</div></div>
@@ -373,13 +253,22 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ═══════════ PREVIEW MODAL ═══════════ -->
+<!-- PREVIEW MODAL -->
 <div id="preview-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0">
     <div id="preview-title" style="color:#f5f5f7;font-size:16px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-    <button onclick="closePreview()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation;margin-left:12px;flex-shrink:0">✕ Schließen</button>
+    <button onclick="closePreview()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation;margin-left:12px;flex-shrink:0">✕</button>
   </div>
   <div id="preview-content" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 16px 16px"></div>
+</div>
+
+<!-- COPY MODAL -->
+<div id="copy-modal">
+  <div class="copy-sheet">
+    <div style="color:#f5f5f7;font-size:16px;font-weight:600;margin-bottom:16px">In welchen Ordner kopieren?</div>
+    <div id="copy-folder-list"></div>
+    <button onclick="closeCopyModal()" style="background:#3a3a3c;border:none;border-radius:8px;padding:12px;color:#6e6e73;font-size:14px;cursor:pointer;width:100%;margin-top:8px">Abbrechen</button>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -388,152 +277,64 @@ document.addEventListener('DOMContentLoaded', () => {
 // ══════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════
-const SUPABASE_URL    = 'https://ormpszktwwiahjooukjk.supabase.co';
-const SUPABASE_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ybXBzemt0d3dpYWhqb291a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzM5NTAsImV4cCI6MjA5NjQ0OTk1MH0.Jz4rKTlrvRbfdxS1e8fRkwXeD3CJsITeC6Q4lDBjfCc';
-const STORAGE_BUCKET  = 'tresor-docs';
-const VAULT_CODE_KEY  = 'tresor_vault_hash'; // hash of user's chosen code
-const ADMIN_RAW       = '1+1';               // fixed admin code (raw expression)
+const SUPABASE_URL   = 'https://ormpszktwwiahjooukjk.supabase.co';
+const SUPABASE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ybXBzemt0d3dpYWhqb291a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzM5NTAsImV4cCI6MjA5NjQ0OTk1MH0.Jz4rKTlrvRbfdxS1e8fRkwXeD3CJsITeC6Q4lDBjfCc';
+const STORAGE_BUCKET = 'tresor-docs';
+const VAULT_CODE_KEY = 'tresor_vault_hash';
+const USERNAME_KEY   = 'tresor_username';
+const ADMIN_RAW      = '1+1';
+
+function getUsername() { return localStorage.getItem(USERNAME_KEY) || 'default'; }
 
 // ══════════════════════════════════════
 // CALCULATOR
 // ══════════════════════════════════════
-let calcRaw = ''; // raw string of everything typed e.g. "47+34-12"
+let calcRaw = '';
 
 function updateDisplay() {
-  // show raw string in expr, last number segment in result
   const parts = calcRaw.split(/([+\-×÷*\/])/);
-  const last = parts[parts.length - 1] || '0';
+  const last = parts[parts.length-1] || '0';
   document.getElementById('result').textContent = last || '0';
   document.getElementById('expr').textContent = calcRaw;
-  // mirror into setup banner if open
-  if (document.getElementById('setup-banner').style.display === 'flex') {
+  if (document.getElementById('setup-banner').style.display === 'flex')
     document.getElementById('setup-display').textContent = calcRaw || '– – –';
-  }
-}
-
-let pwCalcMode = false;
-let pwCalcValue = '';
-
-function openPwCalc() {
-  pwCalcMode = true;
-  pwCalcValue = document.getElementById('pw-pass').value || '';
-  document.getElementById('pw-calc-banner').style.display = 'flex';
-  document.getElementById('pw-calc-display').textContent = pwCalcValue || '–';
-  document.getElementById('vault').classList.remove('open');
-  calcRaw = '';
-  updateDisplay();
-}
-
-function pwCalcDelete() {
-  pwCalcValue = pwCalcValue.slice(0, -1);
-  document.getElementById('pw-calc-display').textContent = pwCalcValue || '–';
-}
-
-function confirmPwCalc() {
-  document.getElementById('pw-pass').value = pwCalcValue;
-  pwCalcMode = false;
-  pwCalcValue = '';
-  document.getElementById('pw-calc-banner').style.display = 'none';
-  document.getElementById('vault').classList.add('open');
-  calcRaw = '';
-  updateDisplay();
 }
 
 function calcNum(n) {
-  if (pwCalcMode) {
-    pwCalcValue += n;
-    document.getElementById('pw-calc-display').textContent = pwCalcValue;
-    return;
-  }
-  if (n === '.' && calcRaw.match(/\.\d*$/)) return; // no double dot
-  if (calcRaw === '0') calcRaw = n;
-  else calcRaw += n;
+  if (n==='.' && calcRaw.match(/\.\d*$/)) return;
+  if (calcRaw==='0') calcRaw=n; else calcRaw+=n;
   updateDisplay();
 }
-
 function calcOp(op) {
-  if (pwCalcMode) {
-    const opMap = {'÷':'/','×':'*','−':'-','+':'+'};
-    pwCalcValue += opMap[op] || op;
-    document.getElementById('pw-calc-display').textContent = pwCalcValue;
-    return;
-  }
-  // don't allow two operators in a row
-  if (calcRaw === '' || /[+\-×÷]$/.test(calcRaw)) return;
-  calcRaw += op;
-  updateDisplay();
+  if (calcRaw==='' || /[+\-×÷]$/.test(calcRaw)) return;
+  calcRaw+=op; updateDisplay();
 }
-
 function calcFunc(f) {
-  if (pwCalcMode && f === 'AC') {
-    pwCalcValue = '';
-    document.getElementById('pw-calc-display').textContent = '–';
-    return;
-  }
-  if (f === 'AC')  { calcRaw = ''; updateDisplay(); }
-  if (f === '%')   {
-    // append % to last number segment
-    if (calcRaw && !/[+\-×÷%]$/.test(calcRaw)) { calcRaw += '%'; updateDisplay(); }
-  }
-  if (f === '+/-') {
-    // negate last number segment
-    const m = calcRaw.match(/^(.*[+\-×÷])(-?)(\d+\.?\d*)$/);
-    if (m) calcRaw = m[1] + (m[2] ? '' : '-') + m[3];
-    else if (calcRaw) calcRaw = calcRaw.startsWith('-') ? calcRaw.slice(1) : '-' + calcRaw;
+  if (f==='AC') { calcRaw=''; updateDisplay(); }
+  if (f==='%' && calcRaw && !/[+\-×÷%]$/.test(calcRaw)) { calcRaw+='%'; updateDisplay(); }
+  if (f==='+/-') {
+    const m=calcRaw.match(/^(.*[+\-×÷])(-?)(\d+\.?\d*)$/);
+    if (m) calcRaw=m[1]+(m[2]?'':'-')+m[3];
+    else if (calcRaw) calcRaw=calcRaw.startsWith('-')?calcRaw.slice(1):'-'+calcRaw;
     updateDisplay();
   }
 }
 
-function getRawExpr() {
-  // return the full raw string if it has at least one operator and one number after
-  if (/[+\-×÷]/.test(calcRaw) && !/[+\-×÷]$/.test(calcRaw)) return calcRaw;
-  return null;
-}
-
-function computeResult(a, op, b) {
-  if (op==='+') return a+b; if (op==='−') return a-b;
-  if (op==='×') return a*b; if (op==='÷') return b===0?NaN:a/b;
-  return b;
-}
-
 async function calcEquals() {
-  // ── PASSWORT MODUS: = als Zeichen ins Passwort ──
-  if (pwCalcMode) {
-    pwCalcValue += '=';
-    document.getElementById('pw-calc-display').textContent = pwCalcValue;
-    return;
-  }
-
   const raw = calcRaw.trim();
   if (!raw) return;
-
-  // show result visually
   try {
     const expr = raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'*0.01');
-    const result = Function('"use strict"; return (' + expr + ')')();
-    document.getElementById('expr').textContent = raw + ' =';
-    document.getElementById('result').textContent = isNaN(result) ? 'Fehler' : String(+result.toFixed(10));
-  } catch(e) {
-    document.getElementById('result').textContent = 'Fehler';
-  }
+    const result = Function('"use strict";return('+expr+')')();
+    document.getElementById('expr').textContent = raw+' =';
+    document.getElementById('result').textContent = isNaN(result)?'Fehler':String(+result.toFixed(10));
+  } catch(e) { document.getElementById('result').textContent='Fehler'; }
 
-  // ── SETUP MODE: accept new vault code ──
-  if (document.getElementById('setup-banner').style.display === 'flex') {
-    await registerVaultCode(raw);
-    calcRaw = '';
-    return;
+  if (document.getElementById('setup-banner').style.display==='flex') {
+    await registerVaultCode(raw); calcRaw=''; return;
   }
-
-  // ── ADMIN CODE: open setup ──
-  if (raw === ADMIN_RAW) {
-    calcRaw = '';
-    openSetup();
-    return;
-  }
-
-  // ── VAULT CODE: try unlock ──
-  await tryUnlock(raw);
-  calcRaw = '';
+  if (raw===ADMIN_RAW) { calcRaw=''; openSetup(); return; }
+  await tryUnlock(raw); calcRaw='';
 }
 
 // ══════════════════════════════════════
@@ -543,26 +344,19 @@ async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-
 async function deriveKey(code) {
-  return crypto.subtle.importKey('raw',
-    new TextEncoder().encode(code.padEnd(32,'0').slice(0,32)),
-    'AES-GCM', false, ['encrypt','decrypt']);
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(code.padEnd(32,'0').slice(0,32)), 'AES-GCM', false, ['encrypt','decrypt']);
 }
-
 async function encrypt(text, code) {
-  const key = await deriveKey(code);
-  const iv  = crypto.getRandomValues(new Uint8Array(12));
-  const enc = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, new TextEncoder().encode(text));
-  const out = new Uint8Array(12 + enc.byteLength);
-  out.set(iv); out.set(new Uint8Array(enc), 12);
+  const key=await deriveKey(code), iv=crypto.getRandomValues(new Uint8Array(12));
+  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
+  const out=new Uint8Array(12+enc.byteLength); out.set(iv); out.set(new Uint8Array(enc),12);
   return btoa(String.fromCharCode(...out));
 }
-
 async function decrypt(b64, code) {
-  const bytes = new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
-  const key   = await deriveKey(code);
-  const dec   = await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, key, bytes.slice(12));
+  const bytes=new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
+  const key=await deriveKey(code);
+  const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
   return new TextDecoder().decode(dec);
 }
 
@@ -570,106 +364,211 @@ async function decrypt(b64, code) {
 // SETUP
 // ══════════════════════════════════════
 function openSetup() {
-  calcFunc('AC');
-  document.getElementById('setup-display').textContent = '– – –';
-  document.getElementById('setup-status').textContent  = '';
-  document.getElementById('setup-banner').style.display = 'flex';
-  // push calculator down so banner doesn't overlap
-  document.getElementById('calculator').style.marginTop = '90px';
+  calcRaw=''; updateDisplay();
+  document.getElementById('setup-display').textContent='– – –';
+  document.getElementById('setup-status').textContent='';
+  const existing=getUsername();
+  const inp=document.getElementById('setup-username');
+  inp.value=existing==='default'?'':existing;
+  inp.placeholder=existing==='default'?'Benutzername wählen…':'Benutzername ändern…';
+  document.getElementById('setup-banner').style.display='flex';
+  document.getElementById('calculator').style.marginTop='200px';
+  setTimeout(()=>inp.focus(),100);
 }
-
 function closeSetup() {
-  document.getElementById('setup-banner').style.display = 'none';
-  document.getElementById('calculator').style.marginTop = '';
-  calcFunc('AC');
+  document.getElementById('setup-banner').style.display='none';
+  document.getElementById('calculator').style.marginTop='';
+  calcRaw=''; updateDisplay();
 }
-
 async function registerVaultCode(raw) {
-  if (raw === ADMIN_RAW) {
-    document.getElementById('setup-status').textContent = '❌ Dieser Code ist reserviert. Anderen wählen.';
-    return;
-  }
-  const hash = await sha256(raw);
-  localStorage.setItem(VAULT_CODE_KEY, hash);
-  document.getElementById('setup-status').textContent = '✅ Code gespeichert!';
-  showToast('✅ Neuer Code gespeichert');
-  setTimeout(() => {
-    closeSetup();
-    // directly open vault with new code
-    vaultCode = raw;
-    openVault();
-  }, 800);
+  const username=document.getElementById('setup-username').value.trim();
+  if (!username) { document.getElementById('setup-status').textContent='❌ Bitte Benutzername eingeben!'; return; }
+  if (raw===ADMIN_RAW) { document.getElementById('setup-status').textContent='❌ Dieser Code ist reserviert.'; return; }
+  localStorage.setItem(USERNAME_KEY, username);
+  localStorage.setItem(VAULT_CODE_KEY, await sha256(raw));
+  document.getElementById('setup-status').textContent='✅ Gespeichert!';
+  showToast('✅ Willkommen, '+username+'!');
+  setTimeout(()=>{ closeSetup(); vaultCode=raw; openVault(); }, 800);
 }
 
 // ══════════════════════════════════════
-// VAULT UNLOCK
+// VAULT
 // ══════════════════════════════════════
-let vaultCode = null;
+let vaultCode=null, currentFolderId=null, currentFolderName='';
 
 async function tryUnlock(raw) {
-  const stored = localStorage.getItem(VAULT_CODE_KEY);
-  const calc   = document.getElementById('calculator');
-
-  if (!stored) {
-    // No code set yet → tell user to use admin code
-    calc.classList.add('flash-err');
-    setTimeout(()=>calc.classList.remove('flash-err'), 400);
-    showToast('Erst 1+1= eingeben um Code einzurichten');
-    return;
-  }
-
-  const hash = await sha256(raw);
-  if (hash === stored) {
-    vaultCode = raw;
-    calc.classList.add('flash-ok');
-    setTimeout(()=>calc.classList.remove('flash-ok'), 400);
-    setTimeout(()=>openVault(), 300);
-  } else {
-    calc.classList.add('flash-err');
-    setTimeout(()=>calc.classList.remove('flash-err'), 400);
-  }
+  const stored=localStorage.getItem(VAULT_CODE_KEY);
+  const calc=document.getElementById('calculator');
+  if (!stored) { calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400); showToast('Erst 1+1= eingeben um Code einzurichten'); return; }
+  if (await sha256(raw)===stored) {
+    vaultCode=raw; calc.classList.add('flash-ok'); setTimeout(()=>calc.classList.remove('flash-ok'),400); setTimeout(()=>openVault(),300);
+  } else { calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400); }
 }
 
 function openVault() {
+  const u=getUsername();
+  document.getElementById('vault-title').textContent='🔐 '+(u==='default'?'Tresor':u);
   document.getElementById('vault').classList.add('open');
-  loadPasswords(); loadDocs();
+  switchTab('folders');
+  loadFolders();
+}
+function lockVault() {
+  vaultCode=null; currentFolderId=null;
+  document.getElementById('vault').classList.remove('open');
+  calcRaw=''; updateDisplay();
 }
 
-function lockVault() {
-  vaultCode = null;
-  document.getElementById('vault').classList.remove('open');
-  calcFunc('AC');
+function goBack() {
+  currentFolderId=null; currentFolderName='';
+  document.getElementById('back-btn').style.display='none';
+  document.getElementById('vault-title').textContent='🔐 '+(getUsername()==='default'?'Tresor':getUsername());
+  // show folder tabs again
+  const tabs=document.getElementById('vault-tabs');
+  tabs.innerHTML=`<button class="tab-btn active" onclick="switchTab('folders')">📁 Ordner</button><button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>`;
+  switchTab('folders');
+  loadFolders();
+}
+
+function switchTab(name) {
+  document.querySelectorAll('#vault-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const panel=document.getElementById('tab-'+name);
+  if (panel) panel.classList.add('active');
+  // highlight active tab btn
+  document.querySelectorAll('#vault-tabs .tab-btn').forEach(b=>{
+    if (b.textContent.toLowerCase().includes(name==='folders'?'ordner':name==='search'?'such':'ordner')) b.classList.add('active');
+  });
+  if (name==='search') { document.getElementById('global-results').innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; setTimeout(()=>document.getElementById('global-search').focus(),100); }
+}
+
+function switchInnerTab(name) {
+  document.getElementById('inner-pw-tab').classList.toggle('active', name==='passwords');
+  document.getElementById('inner-doc-tab').classList.toggle('active', name==='docs');
+  document.getElementById('inner-passwords').style.display=name==='passwords'?'block':'none';
+  document.getElementById('inner-docs').style.display=name==='docs'?'block':'none';
 }
 
 // ══════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════
 async function sbFetch(path, opts={}) {
-  const res = await fetch(SUPABASE_URL + path, {
-    ...opts,
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json',
-      ...(opts.headers||{})
-    }
-  });
+  const res=await fetch(SUPABASE_URL+path,{...opts,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
   if (!res.ok) throw new Error(await res.text());
-  const ct = res.headers.get('content-type')||'';
-  return ct.includes('json') ? res.json() : res;
+  const ct=res.headers.get('content-type')||'';
+  return ct.includes('json')?res.json():res;
 }
 
-// ── PASSWORDS ──
+// ══════════════════════════════════════
+// FOLDERS
+// ══════════════════════════════════════
+let allFolders=[];
+
+async function createFolder() {
+  const nameVal=document.getElementById('folder-name-input').value.trim();
+  if (!nameVal) { showToast('Bitte Ordnernamen eingeben'); return; }
+  try {
+    const enc=await encrypt(JSON.stringify({name:nameVal}), vaultCode);
+    await sbFetch('/rest/v1/tresor_folders',{method:'POST',body:JSON.stringify({data:enc,username:getUsername()})});
+    document.getElementById('folder-name-input').value='';
+    showToast('📁 Ordner erstellt'); loadFolders();
+  } catch(e) { showToast('❌ '+e.message); }
+}
+
+async function loadFolders() {
+  try {
+    const u=getUsername();
+    const rows=await sbFetch(`/rest/v1/tresor_folders?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&order=created_at.asc`);
+    allFolders=[];
+    for (const row of rows) {
+      try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allFolders.push({id:row.id,...obj}); } catch {}
+    }
+    // ensure "Mein Leben" exists
+    if (!allFolders.length) { await ensureDefaultFolder(); return; }
+    renderFolders();
+  } catch(e) { showToast('Ladefehler: '+e.message); }
+}
+
+async function ensureDefaultFolder() {
+  try {
+    const enc=await encrypt(JSON.stringify({name:'Mein Leben'}),vaultCode);
+    await sbFetch('/rest/v1/tresor_folders',{method:'POST',body:JSON.stringify({data:enc,username:getUsername()})});
+    loadFolders();
+  } catch(e) {}
+}
+
+async function renderFolders() {
+  const list=document.getElementById('folder-list');
+  if (!allFolders.length) { list.innerHTML='<div class="empty-state">Noch keine Ordner</div>'; return; }
+  list.innerHTML='';
+  for (const f of allFolders) {
+    // count items
+    let pwCount=0, docCount=0;
+    try {
+      const u=getUsername();
+      const pws=await sbFetch(`/rest/v1/tresor_passwords?select=id&username=eq.${encodeURIComponent(u)}&folder_id=eq.${f.id}`);
+      const docs=await sbFetch(`/rest/v1/tresor_docs?select=id&username=eq.${encodeURIComponent(u)}&folder_id=eq.${f.id}`);
+      pwCount=pws.length; docCount=docs.length;
+    } catch {}
+    const card=document.createElement('div');
+    card.className='folder-card';
+    card.innerHTML=`
+      <div class="folder-icon">📁</div>
+      <div class="folder-info" onclick="openFolder('${f.id}','${escHtml(f.name)}')">
+        <div class="folder-name">${escHtml(f.name)}</div>
+        <div class="folder-meta">${pwCount} Passwörter · ${docCount} Dokumente</div>
+      </div>
+      <div class="folder-actions">
+        <button class="icon-btn danger" onclick="deleteFolder('${f.id}')" title="Löschen">🗑</button>
+      </div>`;
+    list.appendChild(card);
+  }
+}
+
+async function deleteFolder(id) {
+  if (!confirm('Ordner und alle Inhalte löschen?')) return;
+  try {
+    // delete all passwords and docs in folder first
+    const u=getUsername();
+    const pws=await sbFetch(`/rest/v1/tresor_passwords?select=id&username=eq.${encodeURIComponent(u)}&folder_id=eq.${id}`);
+    for (const p of pws) await sbFetch(`/rest/v1/tresor_passwords?id=eq.${p.id}`,{method:'DELETE'});
+    const docs=await sbFetch(`/rest/v1/tresor_docs?select=id,data&username=eq.${encodeURIComponent(u)}&folder_id=eq.${id}`);
+    for (const d of docs) {
+      try { const obj=JSON.parse(await decrypt(d.data,vaultCode)); await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${obj.path}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}); } catch {}
+      await sbFetch(`/rest/v1/tresor_docs?id=eq.${d.id}`,{method:'DELETE'});
+    }
+    await sbFetch(`/rest/v1/tresor_folders?id=eq.${id}`,{method:'DELETE'});
+    showToast('🗑 Ordner gelöscht'); loadFolders();
+  } catch(e) { showToast('❌ '+e.message); }
+}
+
+function openFolder(id, name) {
+  currentFolderId=id; currentFolderName=name;
+  document.getElementById('vault-title').textContent='📁 '+name;
+  document.getElementById('back-btn').style.display='flex';
+  // replace tabs with folder-detail
+  const tabs=document.getElementById('vault-tabs');
+  tabs.innerHTML=''; // hide top tabs when inside folder
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-folder-detail').classList.add('active');
+  switchInnerTab('passwords');
+  loadPasswords(); loadDocs();
+}
+
+// ══════════════════════════════════════
+// PASSWORDS
+// ══════════════════════════════════════
+let allPasswords=[];
+
 async function savePassword() {
-  const name = document.getElementById('pw-name').value.trim();
-  const user = document.getElementById('pw-user').value.trim();
-  const pass = document.getElementById('pw-pass').value;
+  const name=document.getElementById('pw-name').value.trim();
+  const user=document.getElementById('pw-user').value.trim();
+  const pass=document.getElementById('pw-pass').value;
   if (!name||!pass) { showToast('Name und Passwort sind Pflichtfelder'); return; }
-  const btn = document.getElementById('pw-save-btn');
+  const btn=document.getElementById('pw-save-btn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Speichern…';
   try {
-    const enc = await encrypt(JSON.stringify({name,user,pass}), vaultCode);
-    await sbFetch('/rest/v1/tresor_passwords', {method:'POST', body:JSON.stringify({data:enc})});
+    const enc=await encrypt(JSON.stringify({name,user,pass}),vaultCode);
+    await sbFetch('/rest/v1/tresor_passwords',{method:'POST',body:JSON.stringify({data:enc,username:getUsername(),folder_id:currentFolderId})});
     document.getElementById('pw-name').value='';
     document.getElementById('pw-user').value='';
     document.getElementById('pw-pass').value='';
@@ -678,258 +577,198 @@ async function savePassword() {
   finally { btn.disabled=false; btn.textContent='Speichern'; }
 }
 
-let allPasswords = [];
-
 async function loadPasswords() {
   try {
-    const rows = await sbFetch('/rest/v1/tresor_passwords?select=id,data,created_at&order=created_at.desc');
-    allPasswords = [];
+    const u=getUsername();
+    const rows=await sbFetch(`/rest/v1/tresor_passwords?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&folder_id=eq.${currentFolderId}&order=created_at.desc`);
+    allPasswords=[];
     for (const row of rows) {
-      try {
-        const obj = JSON.parse(await decrypt(row.data, vaultCode));
-        allPasswords.push({id: row.id, ...obj});
-      } catch {}
+      try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allPasswords.push({id:row.id,...obj}); } catch {}
     }
     renderPasswords(allPasswords);
   } catch(e) { showToast('Ladefehler: '+e.message); }
 }
 
 function renderPasswords(items) {
-  const list = document.getElementById('pw-list');
-  if (!items.length) { list.innerHTML='<div class="empty-state">Keine Einträge gefunden</div>'; return; }
+  const list=document.getElementById('pw-list');
+  if (!items.length) { list.innerHTML='<div class="empty-state">Noch keine Einträge</div>'; return; }
   list.innerHTML='';
   for (const obj of items) {
-    const card = document.createElement('div');
-    card.className='card';
+    const card=document.createElement('div'); card.className='card';
     card.innerHTML=`
       <div class="card-actions">
-        <button class="icon-btn" title="Kopieren" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
+        <button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
+        <button class="icon-btn" onclick="openCopyModal('password','${obj.id}')" title="In Ordner kopieren">📁</button>
         <button class="icon-btn danger" onclick="deleteEntry('passwords','${obj.id}')">🗑</button>
       </div>
       <div class="card-label">Name</div>
       <div class="card-value" style="margin-bottom:8px">${escHtml(obj.name)}</div>
       ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:8px">${escHtml(obj.user)}</div>`:''}
       <div class="card-label">Passwort</div>
-      <div class="card-value card-pass">${escHtml(obj.pass)}</div>`;
+      <div class="card-value" style="font-family:monospace">${escHtml(obj.pass)}</div>`;
     list.appendChild(card);
   }
 }
 
-function filterPasswords(query) {
-  const q = query.toLowerCase();
+function filterPasswords(q) {
+  q=q.toLowerCase();
   if (!q) { renderPasswords(allPasswords); return; }
-  renderPasswords(allPasswords.filter(d =>
-    d.name.toLowerCase().includes(q) ||
-    (d.user && d.user.toLowerCase().includes(q))
-  ));
+  renderPasswords(allPasswords.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q))));
 }
 
-// ── NOTES ──
-let allNotes = [];
-
-async function saveNote() {
-  const title = document.getElementById('note-title').value.trim();
-  const body  = document.getElementById('note-body').value.trim();
-  if (!title||!body) { showToast('Titel und Inhalt sind Pflichtfelder'); return; }
-  const btn = document.getElementById('note-save-btn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Speichern…';
-  try {
-    const enc = await encrypt(JSON.stringify({title,body}), vaultCode);
-    await sbFetch('/rest/v1/tresor_notes', {method:'POST', body:JSON.stringify({data:enc})});
-    document.getElementById('note-title').value='';
-    document.getElementById('note-body').value='';
-    document.getElementById('note-search').value='';
-    showToast('✅ Gespeichert'); loadNotes();
-  } catch(e) { showToast('❌ '+e.message); }
-  finally { btn.disabled=false; btn.textContent='Speichern'; }
-}
-
-async function loadNotes() {
-  try {
-    const rows = await sbFetch('/rest/v1/tresor_notes?select=id,data,created_at&order=created_at.desc');
-    allNotes = [];
-    for (const row of rows) {
-      try {
-        const obj = JSON.parse(await decrypt(row.data, vaultCode));
-        allNotes.push({id: row.id, ...obj});
-      } catch {}
-    }
-    renderNotes(allNotes);
-  } catch(e) { showToast('Ladefehler: '+e.message); }
-}
-
-function renderNotes(items) {
-  const list = document.getElementById('note-list');
-  if (!items.length) { list.innerHTML='<div class="empty-state">Keine Einträge gefunden</div>'; return; }
-  list.innerHTML='';
-  for (const obj of items) {
-    const card = document.createElement('div');
-    card.className='card';
-    card.innerHTML=`
-      <div class="card-actions">
-        <button class="icon-btn danger" onclick="deleteEntry('notes','${obj.id}')">🗑</button>
-      </div>
-      <div class="card-label">Titel</div>
-      <div class="card-value" style="margin-bottom:8px">${escHtml(obj.title)}</div>
-      <div class="card-label">Inhalt</div>
-      <div class="card-value" style="white-space:pre-wrap">${escHtml(obj.body)}</div>`;
-    list.appendChild(card);
-  }
-}
-
-function filterNotes(query) {
-  const q = query.toLowerCase();
-  if (!q) { renderNotes(allNotes); return; }
-  renderNotes(allNotes.filter(d =>
-    d.title.toLowerCase().includes(q) ||
-    d.body.toLowerCase().includes(q)
-  ));
-}
-
-// ── DOCUMENTS ──
-let allDocs = [];
+// ══════════════════════════════════════
+// DOCUMENTS
+// ══════════════════════════════════════
+let allDocs=[];
 
 async function uploadFile(file) {
   if (!file) return;
-  const desc = document.getElementById('doc-desc').value.trim();
-  const bar=document.getElementById('upload-progress-bar');
-  const fill=document.getElementById('upload-progress-fill');
+  const desc=document.getElementById('doc-desc').value.trim();
+  const bar=document.getElementById('upload-progress-bar'), fill=document.getElementById('upload-progress-fill');
   bar.style.display='block'; fill.style.width='10%';
   showToast('⏫ Wird hochgeladen…');
   try {
-    const key = await deriveKey(vaultCode);
-    const iv  = crypto.getRandomValues(new Uint8Array(12));
-    const enc = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, await file.arrayBuffer());
-    const combined = new Uint8Array(12+enc.byteLength);
-    combined.set(iv); combined.set(new Uint8Array(enc),12);
+    const key=await deriveKey(vaultCode), iv=crypto.getRandomValues(new Uint8Array(12));
+    const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,await file.arrayBuffer());
+    const combined=new Uint8Array(12+enc.byteLength); combined.set(iv); combined.set(new Uint8Array(enc),12);
     fill.style.width='40%';
-    const path = Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const res  = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{
-      method:'POST',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/octet-stream'},
-      body: new Blob([combined])
-    });
+    const path=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const res=await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/octet-stream'},body:new Blob([combined])});
     fill.style.width='75%';
     if (!res.ok) throw new Error(await res.text());
-    const meta = await encrypt(JSON.stringify({name:file.name, desc, size:file.size, path}), vaultCode);
-    await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta})});
+    const meta=await encrypt(JSON.stringify({name:file.name,desc,size:file.size,path}),vaultCode);
+    await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta,username:getUsername(),folder_id:currentFolderId})});
     fill.style.width='100%';
     setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},600);
     showToast('✅ Hochgeladen');
     document.getElementById('file-input').value='';
     document.getElementById('doc-desc').value='';
-    document.getElementById('doc-search').value='';
     loadDocs();
   } catch(e) { bar.style.display='none'; showToast('❌ '+e.message); }
 }
 
 async function loadDocs() {
   try {
-    const rows = await sbFetch('/rest/v1/tresor_docs?select=id,data,created_at&order=created_at.desc');
-    allDocs = [];
+    const u=getUsername();
+    const rows=await sbFetch(`/rest/v1/tresor_docs?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&folder_id=eq.${currentFolderId}&order=created_at.desc`);
+    allDocs=[];
     for (const row of rows) {
-      try {
-        const obj = JSON.parse(await decrypt(row.data, vaultCode));
-        allDocs.push({id: row.id, ...obj});
-      } catch {}
+      try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allDocs.push({id:row.id,...obj}); } catch {}
     }
     renderDocs(allDocs);
   } catch(e) { showToast('Ladefehler: '+e.message); }
 }
 
 function renderDocs(docs, container) {
-  const list = container || document.getElementById('doc-list');
-  if (!docs.length) { list.innerHTML='<div class="empty-state">Keine Dokumente gefunden</div>'; return; }
+  const list=container||document.getElementById('doc-list');
+  if (!docs.length) { list.innerHTML='<div class="empty-state">Noch keine Dokumente</div>'; return; }
   list.innerHTML='';
   for (const obj of docs) {
-    const card = document.createElement('div');
-    card.className='doc-card';
-    const ext = obj.name.split('.').pop().toLowerCase();
-    const previewable = ['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
+    const ext=obj.name.split('.').pop().toLowerCase();
+    const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
+    const card=document.createElement('div'); card.className='doc-card';
     card.innerHTML=`
       <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
-        <div class="doc-name">${previewable?'👁 ':'📄 '}${escHtml(obj.desc || obj.name)}</div>
-        <div class="doc-meta">${obj.desc ? escHtml(obj.name) + ' · ' : ''}${formatSize(obj.size)}</div>
+        <div class="doc-name">${previewable?'👁 ':'📄 '}${escHtml(obj.desc||obj.name)}</div>
+        <div class="doc-meta">${obj.desc?escHtml(obj.name)+' · ':''}${formatSize(obj.size)}</div>
       </div>
-      <button class="icon-btn" title="Herunterladen" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>
+      <button class="icon-btn" onclick="openCopyModal('doc','${obj.id}')" title="Kopieren">📁</button>
+      <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>
       <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}','${escHtml(obj.path)}')">🗑</button>`;
     list.appendChild(card);
   }
 }
 
-function filterDocs(query) {
-  const q = query.toLowerCase();
+function filterDocs(q) {
+  q=q.toLowerCase();
   if (!q) { renderDocs(allDocs); return; }
-  renderDocs(allDocs.filter(d =>
-    d.name.toLowerCase().includes(q) || (d.desc && d.desc.toLowerCase().includes(q))
-  ));
+  renderDocs(allDocs.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q))));
 }
 
-// ── PREVIEW ──
-async function previewDoc(path, name) {
-  showToast('⏳ Wird geladen…');
+// ══════════════════════════════════════
+// COPY TO FOLDER
+// ══════════════════════════════════════
+let copyTarget=null; // {type, id}
+
+async function openCopyModal(type, id) {
+  copyTarget={type,id};
+  const list=document.getElementById('copy-folder-list');
+  list.innerHTML='';
+  for (const f of allFolders) {
+    if (f.id===currentFolderId) continue; // skip current folder
+    const btn=document.createElement('button');
+    btn.className='copy-folder-btn';
+    btn.innerHTML=`📁 ${escHtml(f.name)}`;
+    btn.onclick=()=>copyToFolder(f.id);
+    list.appendChild(btn);
+  }
+  if (!list.children.length) list.innerHTML='<div class="empty-state">Keine anderen Ordner vorhanden</div>';
+  document.getElementById('copy-modal').classList.add('open');
+}
+
+function closeCopyModal() {
+  document.getElementById('copy-modal').classList.remove('open');
+  copyTarget=null;
+}
+
+async function copyToFolder(targetFolderId) {
+  if (!copyTarget) return;
+  closeCopyModal();
   try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    const key   = await deriveKey(vaultCode);
-    const dec   = await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, key, bytes.slice(12));
-    const ext   = name.split('.').pop().toLowerCase();
-
-    let mimeMap = {jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',
-      webp:'image/webp',svg:'image/svg+xml',pdf:'application/pdf',
-      html:'text/html',htm:'text/html',txt:'text/plain',
-      mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg'};
-    const mime = mimeMap[ext] || 'application/octet-stream';
-    const blob = new Blob([dec], {type: mime});
-    const url  = URL.createObjectURL(blob);
-
-    document.getElementById('preview-title').textContent = name;
-    const content = document.getElementById('preview-content');
-    content.innerHTML = '';
-
-    if (mime.startsWith('image/')) {
-      content.innerHTML = `<img src="${url}" style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px;object-fit:contain">`;
-    } else if (mime === 'application/pdf') {
-      content.innerHTML = `<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px"></iframe>`;
-    } else if (mime.startsWith('video/')) {
-      content.innerHTML = `<video src="${url}" controls style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px"></video>`;
-    } else if (mime.startsWith('audio/')) {
-      content.innerHTML = `<audio src="${url}" controls style="width:100%"></audio>`;
-    } else if (mime === 'text/plain') {
-      const text = new TextDecoder().decode(dec);
-      content.innerHTML = `<pre style="color:#f5f5f7;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.6;max-width:100%">${escHtml(text)}</pre>`;
-    } else if (mime === 'text/html') {
-      content.innerHTML = `<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px;background:#fff"></iframe>`;
+    if (copyTarget.type==='password') {
+      const original=allPasswords.find(p=>p.id===copyTarget.id);
+      if (!original) return;
+      const enc=await encrypt(JSON.stringify({name:original.name,user:original.user,pass:original.pass}),vaultCode);
+      await sbFetch('/rest/v1/tresor_passwords',{method:'POST',body:JSON.stringify({data:enc,username:getUsername(),folder_id:targetFolderId})});
     } else {
-      content.innerHTML = `<div style="color:#6e6e73;text-align:center">Vorschau nicht verfügbar<br><br><button onclick="downloadDoc('${escHtml(path)}','${escHtml(name)}')" class="add-btn" style="width:auto;padding:10px 20px">⬇️ Herunterladen</button></div>`;
+      const original=allDocs.find(d=>d.id===copyTarget.id);
+      if (!original) return;
+      const meta=await encrypt(JSON.stringify({name:original.name,desc:original.desc,size:original.size,path:original.path}),vaultCode);
+      await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta,username:getUsername(),folder_id:targetFolderId})});
     }
-
-    document.getElementById('preview-modal').style.display = 'flex';
+    showToast('📁 Kopiert!');
   } catch(e) { showToast('❌ '+e.message); }
 }
 
-function closePreview() {
-  document.getElementById('preview-modal').style.display = 'none';
-  document.getElementById('preview-content').innerHTML = '';
+// ══════════════════════════════════════
+// PREVIEW & DOWNLOAD
+// ══════════════════════════════════════
+async function previewDoc(path, name) {
+  showToast('⏳ Wird geladen…');
+  try {
+    const res=await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if (!res.ok) throw new Error(await res.text());
+    const bytes=new Uint8Array(await res.arrayBuffer());
+    const key=await deriveKey(vaultCode);
+    const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+    const ext=name.split('.').pop().toLowerCase();
+    const mimeMap={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml',pdf:'application/pdf',html:'text/html',htm:'text/html',txt:'text/plain',mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg'};
+    const mime=mimeMap[ext]||'application/octet-stream';
+    const url=URL.createObjectURL(new Blob([dec],{type:mime}));
+    document.getElementById('preview-title').textContent=name;
+    const content=document.getElementById('preview-content');
+    content.innerHTML='';
+    if (mime.startsWith('image/')) content.innerHTML=`<img src="${url}" style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px;object-fit:contain">`;
+    else if (mime==='application/pdf') content.innerHTML=`<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px"></iframe>`;
+    else if (mime.startsWith('video/')) content.innerHTML=`<video src="${url}" controls style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px"></video>`;
+    else if (mime.startsWith('audio/')) content.innerHTML=`<audio src="${url}" controls style="width:100%"></audio>`;
+    else if (mime==='text/plain') { const text=new TextDecoder().decode(dec); content.innerHTML=`<pre style="color:#f5f5f7;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.6;max-width:100%">${escHtml(text)}</pre>`; }
+    else if (mime==='text/html') content.innerHTML=`<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px;background:#fff"></iframe>`;
+    document.getElementById('preview-modal').style.display='flex';
+  } catch(e) { showToast('❌ '+e.message); }
 }
+function closePreview() { document.getElementById('preview-modal').style.display='none'; document.getElementById('preview-content').innerHTML=''; }
 
-async function downloadDoc(path, name) {
+async function downloadDoc(path,name) {
   showToast('⬇️ Wird entschlüsselt…');
   try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    });
+    const res=await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if (!res.ok) throw new Error(await res.text());
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    const key   = await deriveKey(vaultCode);
-    const dec   = await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, key, bytes.slice(12));
-    const url   = URL.createObjectURL(new Blob([dec]));
-    const a     = document.createElement('a');
-    a.href=url; a.download=name; a.click();
-    URL.revokeObjectURL(url);
+    const bytes=new Uint8Array(await res.arrayBuffer());
+    const key=await deriveKey(vaultCode);
+    const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+    const url=URL.createObjectURL(new Blob([dec]));
+    const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
     showToast('✅ Heruntergeladen');
   } catch(e) { showToast('❌ '+e.message); }
 }
@@ -938,115 +777,85 @@ async function deleteEntry(table, id, storagePath=null) {
   if (!confirm('Wirklich löschen?')) return;
   try {
     await sbFetch(`/rest/v1/tresor_${table}?id=eq.${id}`,{method:'DELETE'});
-    if (storagePath) await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${storagePath}`,{
-      method:'DELETE', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    });
+    if (storagePath) await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${storagePath}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     showToast('🗑 Gelöscht');
-    if (table==='passwords') loadPasswords();
-    else loadDocs();
+    if (table==='passwords') loadPasswords(); else loadDocs();
   } catch(e) { showToast('❌ '+e.message); }
 }
 
-function globalSearch(query) {
-  const q = query.toLowerCase().trim();
-  const container = document.getElementById('global-results');
+// ══════════════════════════════════════
+// GLOBAL SEARCH
+// ══════════════════════════════════════
+async function globalSearch(query) {
+  const q=query.toLowerCase().trim();
+  const container=document.getElementById('global-results');
   if (!q) { container.innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; return; }
 
-  const pwMatches = allPasswords.filter(d =>
-    d.name.toLowerCase().includes(q) ||
-    (d.user && d.user.toLowerCase().includes(q)) ||
-    (d.pass && d.pass.toLowerCase().includes(q))
-  );
-  const docMatches = allDocs.filter(d =>
-    d.name.toLowerCase().includes(q) ||
-    (d.desc && d.desc.toLowerCase().includes(q))
-  );
+  container.innerHTML='<div class="empty-state"><span class="spinner"></span>Suche…</div>';
+  try {
+    const u=getUsername();
+    // load all passwords and docs across all folders
+    const pwRows=await sbFetch(`/rest/v1/tresor_passwords?select=id,data,folder_id&username=eq.${encodeURIComponent(u)}`);
+    const docRows=await sbFetch(`/rest/v1/tresor_docs?select=id,data,folder_id&username=eq.${encodeURIComponent(u)}`);
 
-  container.innerHTML = '';
+    const pwAll=[], docAll=[];
+    for (const r of pwRows) { try { const o=JSON.parse(await decrypt(r.data,vaultCode)); pwAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
+    for (const r of docRows) { try { const o=JSON.parse(await decrypt(r.data,vaultCode)); docAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
 
-  if (!pwMatches.length && !docMatches.length) {
-    container.innerHTML='<div class="empty-state">Keine Ergebnisse für „'+escHtml(query)+'"</div>'; return;
-  }
+    const pwMatches=pwAll.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q)));
+    const docMatches=docAll.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q)));
 
-  if (pwMatches.length) {
-    const hdr = document.createElement('div');
-    hdr.className='section-hdr'; hdr.textContent='🔑 Passwörter';
-    container.appendChild(hdr);
-    for (const obj of pwMatches) {
-      const card = document.createElement('div');
-      card.className='card';
-      card.innerHTML=`
-        <div class="card-actions">
-          <button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
-        </div>
-        <div class="card-label">Name</div>
-        <div class="card-value" style="margin-bottom:4px">${highlight(obj.name, q)}</div>
-        ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value">${highlight(obj.user, q)}</div>`:''}`;
-      container.appendChild(card);
+    container.innerHTML='';
+    if (!pwMatches.length && !docMatches.length) { container.innerHTML='<div class="empty-state">Keine Ergebnisse für „'+escHtml(query)+'"</div>'; return; }
+
+    // helper: get folder name
+    const folderName=id=>{ const f=allFolders.find(f=>f.id===id); return f?f.name:''; };
+
+    if (pwMatches.length) {
+      const hdr=document.createElement('div'); hdr.className='section-hdr'; hdr.textContent='🔑 Passwörter'; container.appendChild(hdr);
+      for (const obj of pwMatches) {
+        const card=document.createElement('div'); card.className='card';
+        card.innerHTML=`
+          <div class="card-actions"><button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button></div>
+          <div class="card-label">Name</div>
+          <div class="card-value" style="margin-bottom:4px">${highlight(obj.name,q)}</div>
+          ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:4px">${highlight(obj.user,q)}</div>`:''}
+          <div class="card-label">Ordner</div><div class="card-value" style="color:#6e6e73;font-size:13px">📁 ${escHtml(folderName(obj.folder_id))}</div>`;
+        container.appendChild(card);
+      }
     }
-  }
-
-  if (docMatches.length) {
-    const hdr = document.createElement('div');
-    hdr.className='section-hdr'; hdr.textContent='📄 Dokumente';
-    container.appendChild(hdr);
-    for (const obj of docMatches) {
-      const card = document.createElement('div');
-      card.className='doc-card';
-      const ext = obj.name.split('.').pop().toLowerCase();
-      const previewable = ['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
-      card.innerHTML=`
-        <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
-          <div class="doc-name">${previewable?'👁 ':'📄 '}${highlight(obj.desc || obj.name, q)}</div>
-          <div class="doc-meta">${obj.desc ? escHtml(obj.name) + ' · ' : ''}${formatSize(obj.size)}</div>
-        </div>
-        <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>`;
-      container.appendChild(card);
+    if (docMatches.length) {
+      const hdr=document.createElement('div'); hdr.className='section-hdr'; hdr.textContent='📄 Dokumente'; container.appendChild(hdr);
+      for (const obj of docMatches) {
+        const ext=obj.name.split('.').pop().toLowerCase();
+        const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
+        const card=document.createElement('div'); card.className='doc-card';
+        card.innerHTML=`
+          <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
+            <div class="doc-name">${previewable?'👁 ':'📄 '}${highlight(obj.desc||obj.name,q)}</div>
+            <div class="doc-meta">📁 ${escHtml(folderName(obj.folder_id))} · ${formatSize(obj.size)}</div>
+          </div>
+          <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>`;
+        container.appendChild(card);
+      }
     }
-  }
+  } catch(e) { container.innerHTML='<div class="empty-state">Fehler: '+escHtml(e.message)+'</div>'; }
 }
 
-// highlight matching text
-function highlight(text, q) {
-  const safe = escHtml(text);
-  const idx = safe.toLowerCase().indexOf(q.toLowerCase());
-  if (idx === -1) return safe;
-  return safe.slice(0,idx) + `<mark style="background:#ff9f0a33;color:#ff9f0a;border-radius:2px">${safe.slice(idx, idx+q.length)}</mark>` + safe.slice(idx+q.length);
+function highlight(text,q) {
+  const safe=escHtml(text), idx=safe.toLowerCase().indexOf(q.toLowerCase());
+  if (idx===-1) return safe;
+  return safe.slice(0,idx)+`<mark style="background:#ff9f0a33;color:#ff9f0a;border-radius:2px">${safe.slice(idx,idx+q.length)}</mark>`+safe.slice(idx+q.length);
 }
 
 // ══════════════════════════════════════
 // UI HELPERS
 // ══════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['passwords','docs','search'][i]===name));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-  if (name === 'search') {
-    // clear and refocus
-    const inp = document.getElementById('global-search');
-    document.getElementById('global-results').innerHTML = '<div class="empty-state">Suchbegriff eingeben…</div>';
-    setTimeout(() => inp.focus(), 100);
-  }
-}
-
-async function copyVal(v) {
-  await navigator.clipboard.writeText(v); showToast('📋 Kopiert!');
-}
-
+async function copyVal(v) { await navigator.clipboard.writeText(v); showToast('📋 Kopiert!'); }
 let toastTimer;
-function showToast(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function formatSize(b) {
-  if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB';
-}
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function formatSize(b) { if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
 
 // Drag & drop
 const zone=document.getElementById('upload-zone');
@@ -1056,102 +865,13 @@ zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-
 
 // Keyboard
 document.addEventListener('keydown',e=>{
-  const active = document.querySelector('.overlay.open');
-  if (active && active.id==='vault') return; // let vault inputs work normally
-  const map={'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
-             '.':'.','*':'×','/':'÷','+':'+','-':'−','Enter':'=','Escape':'AC'};
-  const k=map[e.key];
-  if(!k) return;
-  e.preventDefault();
+  if (document.querySelector('.overlay.open')) return;
+  const map={'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','.':'.','*':'×','/':'÷','+':'+','-':'−','Enter':'=','Escape':'AC'};
+  const k=map[e.key]; if(!k) return; e.preventDefault();
   if(k==='AC') calcFunc('AC');
   else if(k==='=') calcEquals();
   else if(['÷','×','−','+'].includes(k)) calcOp(k);
   else calcNum(k);
-});
-</script>
-
-<!-- ═══════════ CALC KEYBOARD MODAL ═══════════ -->
-<div id="calc-keyboard" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.7);align-items:flex-end">
-  <div style="background:#2c2c2e;width:100%;border-radius:24px 24px 0 0;padding:16px;max-width:480px;margin:0 auto">
-    <!-- display -->
-    <div style="background:#1c1c1e;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div style="color:#f5f5f7;font-size:22px;font-weight:300;flex:1;word-break:break-all;min-height:30px" id="ck-display"></div>
-      <button onclick="ckDelete()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 12px;color:#f5f5f7;font-size:18px;cursor:pointer;touch-action:manipulation">⌫</button>
-      <button onclick="closeCalcKeyboard()" style="background:#ff453a;border:none;border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation">✓</button>
-    </div>
-    <!-- grid -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-      <button class="ck-btn ck-func" onclick="ckPress('C')">C</button>
-      <button class="ck-btn ck-func" onclick="ckPress('!')">!</button>
-      <button class="ck-btn ck-func" onclick="ckPress('@')">@</button>
-      <button class="ck-btn ck-op"   onclick="ckPress('÷')">÷</button>
-
-      <button class="ck-btn ck-num"  onclick="ckPress('7')">7</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('8')">8</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('9')">9</button>
-      <button class="ck-btn ck-op"   onclick="ckPress('×')">×</button>
-
-      <button class="ck-btn ck-num"  onclick="ckPress('4')">4</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('5')">5</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('6')">6</button>
-      <button class="ck-btn ck-op"   onclick="ckPress('−')">−</button>
-
-      <button class="ck-btn ck-num"  onclick="ckPress('1')">1</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('2')">2</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('3')">3</button>
-      <button class="ck-btn ck-op"   onclick="ckPress('+')">+</button>
-
-      <button class="ck-btn ck-num"  onclick="ckPress('0')">0</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('.')">.</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('#')">#</button>
-      <button class="ck-btn ck-num"  onclick="ckPress('_')">_</button>
-    </div>
-  </div>
-</div>
-
-<style>
-.ck-btn {
-  border: none; border-radius: 12px; height: 56px;
-  font-size: 20px; font-weight: 400; cursor: pointer;
-  touch-action: manipulation; transition: filter 0.1s;
-}
-.ck-btn:active { filter: brightness(1.3); }
-.ck-func { background: #3a3a3c; color: #f5f5f7; }
-.ck-op   { background: #ff9f0a; color: #fff; }
-.ck-num  { background: #48484a; color: #f5f5f7; }
-</style>
-
-<script>
-function openCalcKeyboard() {
-  const modal = document.getElementById('calc-keyboard');
-  modal.style.display = 'flex';
-  document.getElementById('ck-display').textContent = document.getElementById('pw-pass').value || '';
-}
-
-function closeCalcKeyboard() {
-  document.getElementById('calc-keyboard').style.display = 'none';
-}
-
-function ckPress(ch) {
-  if (ch === 'C') {
-    document.getElementById('ck-display').textContent = '';
-    document.getElementById('pw-pass').value = '';
-    return;
-  }
-  const display = document.getElementById('ck-display');
-  display.textContent += ch;
-  document.getElementById('pw-pass').value = display.textContent;
-}
-
-function ckDelete() {
-  const display = document.getElementById('ck-display');
-  display.textContent = display.textContent.slice(0, -1);
-  document.getElementById('pw-pass').value = display.textContent;
-}
-
-// close on backdrop tap
-document.getElementById('calc-keyboard').addEventListener('click', function(e) {
-  if (e.target === this) closeCalcKeyboard();
 });
 </script>
 </body>
