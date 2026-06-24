@@ -860,10 +860,12 @@ async function previewDoc(path, name) {
       const container=document.getElementById('pdf-pages');
       for(let i=1;i<=pdfDoc.numPages;i++){
         const page=await pdfDoc.getPage(i);
-        const vp=page.getViewport({scale:window.innerWidth/page.getViewport({scale:1}).width*0.95});
+        const devicePixelRatio=window.devicePixelRatio||2;
+        const baseScale=window.innerWidth/page.getViewport({scale:1}).width*0.95;
+        const vp=page.getViewport({scale:baseScale*devicePixelRatio});
         const canvas=document.createElement('canvas');
         canvas.width=vp.width; canvas.height=vp.height;
-        canvas.style.cssText='max-width:100%;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:block';
+        canvas.style.cssText=`width:${vp.width/devicePixelRatio}px;max-width:100%;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:block`;
         await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
         container.appendChild(canvas);
       }
