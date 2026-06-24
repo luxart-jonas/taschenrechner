@@ -135,8 +135,9 @@ textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
 </div>
 
 <!-- CALCULATOR -->
+<!-- Unsichtbare Fingerprint-Zone über dem ganzen Rechner -->
+<div onclick="fingerprintLogin()" style="position:fixed;top:0;left:0;right:0;height:40vh;z-index:1;cursor:default"></div>
 <div id="calculator">
-  <div id="display" onclick="fingerprintLogin()" style="cursor:pointer">
     <div class="expr" id="expr"></div>
     <div class="result" id="result">0</div>
   </div>
@@ -685,15 +686,17 @@ function renderDocs(docs, container) {
   for (const obj of docs) {
     const ext=obj.name.split('.').pop().toLowerCase();
     const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
-    const card=document.createElement('div'); card.className='doc-card';
+    const card=document.createElement('div'); card.className='doc-card'; card.style.flexWrap='wrap'; card.style.gap='10px';
     card.innerHTML=`
-      <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
+      <div class="doc-info" style="cursor:${previewable?'pointer':'default'};width:100%" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
         <div class="doc-name">${previewable?'👁 ':'📄 '}${escHtml(obj.desc||obj.name)}</div>
         <div class="doc-meta">${obj.desc?escHtml(obj.name)+' · ':''}${formatSize(obj.size)}</div>
       </div>
-      <button class="icon-btn" onclick="openCopyModal('doc','${obj.id}')" title="Kopieren">📁</button>
-      <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>
-      <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}','${escHtml(obj.path)}')">🗑</button>`;
+      <div style="display:flex;gap:12px;width:100%;justify-content:flex-end">
+        <button class="icon-btn" onclick="openCopyModal('doc','${obj.id}')" title="Kopieren" style="width:44px;height:44px;font-size:18px">📁</button>
+        <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" style="width:44px;height:44px;font-size:18px">⬇️</button>
+        <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}','${escHtml(obj.path)}')" style="width:44px;height:44px;font-size:18px">🗑</button>
+      </div>`;
     list.appendChild(card);
   }
 }
@@ -767,7 +770,16 @@ async function previewDoc(path, name) {
     document.getElementById('preview-title').textContent=name;
     const content=document.getElementById('preview-content');
     content.innerHTML='';
-    if (mime.startsWith('image/')) content.innerHTML=`<img src="${url}" style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px;object-fit:contain">`;
+    if (mime.startsWith('image/')) {
+      content.style.overflow='hidden';
+      content.innerHTML=`<div id="zoom-wrap" style="width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center"><img id="zoom-img" src="${url}" style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px;object-fit:contain;touch-action:pinch-zoom;transform-origin:center center;transition:transform 0.1s"></div>`;
+      // pinch zoom
+      let scale=1, lastDist=0;
+      const img=document.getElementById('zoom-img');
+      content.addEventListener('touchstart',e=>{ if(e.touches.length===2) lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); },{passive:true});
+      content.addEventListener('touchmove',e=>{ if(e.touches.length===2){ e.preventDefault(); const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); scale=Math.min(Math.max(scale*(dist/lastDist),0.5),5); img.style.transform=`scale(${scale})`; lastDist=dist; } },{passive:false});
+      content.addEventListener('dblclick',()=>{ scale=scale>1?1:2.5; img.style.transform=`scale(${scale})`; });
+    }
     else if (mime==='application/pdf') content.innerHTML=`<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px"></iframe>`;
     else if (mime.startsWith('video/')) content.innerHTML=`<video src="${url}" controls style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px"></video>`;
     else if (mime.startsWith('audio/')) content.innerHTML=`<audio src="${url}" controls style="width:100%"></audio>`;
@@ -835,10 +847,12 @@ async function globalSearch(query) {
       for (const obj of pwMatches) {
         const card=document.createElement('div'); card.className='card';
         card.innerHTML=`
-          <div class="card-actions"><button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button></div>
+          <div class="card-actions"><button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')" style="width:44px;height:44px;font-size:18px">📋</button></div>
           <div class="card-label">Name</div>
           <div class="card-value" style="margin-bottom:4px">${highlight(obj.name,q)}</div>
           ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:4px">${highlight(obj.user,q)}</div>`:''}
+          <div class="card-label">Passwort</div>
+          <div class="card-value" style="font-family:monospace;margin-bottom:4px">${escHtml(obj.pass)}</div>
           <div class="card-label">Ordner</div><div class="card-value" style="color:#6e6e73;font-size:13px">📁 ${escHtml(folderName(obj.folder_id))}</div>`;
         container.appendChild(card);
       }
