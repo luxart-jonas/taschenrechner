@@ -713,10 +713,14 @@ function filterDocs(q) {
 let copyTarget=null;
 
 async function openCopyModal(type, id) {
-  copyTarget={type, id};
+  // save a snapshot of the data NOW before modal opens
+  const snapshot = type==='password'
+    ? allPasswords.find(p=>p.id===id)
+    : allDocs.find(d=>d.id===id);
+  if (!snapshot) { showToast('❌ Eintrag nicht gefunden'); return; }
+  copyTarget={type, id, snapshot};
   const list=document.getElementById('copy-folder-list');
   list.innerHTML='';
-  // reload folders if empty
   if (!allFolders.length) await loadFolders();
   const others = allFolders.filter(f=>f.id!==currentFolderId);
   if (!others.length) {
@@ -740,17 +744,14 @@ function closeCopyModal() {
 
 async function copyToFolder(targetFolderId) {
   if (!copyTarget) return;
+  const {type, snapshot} = copyTarget;
   closeCopyModal();
   try {
-    if (copyTarget.type==='password') {
-      const original=allPasswords.find(p=>p.id===copyTarget.id);
-      if (!original) { showToast('❌ Eintrag nicht gefunden'); return; }
-      const enc=await encrypt(JSON.stringify({name:original.name,user:original.user,pass:original.pass}),vaultCode);
+    if (type==='password') {
+      const enc=await encrypt(JSON.stringify({name:snapshot.name,user:snapshot.user,pass:snapshot.pass}),vaultCode);
       await sbFetch('/rest/v1/tresor_passwords',{method:'POST',body:JSON.stringify({data:enc,username:getUsername(),folder_id:targetFolderId})});
     } else {
-      const original=allDocs.find(d=>d.id===copyTarget.id);
-      if (!original) { showToast('❌ Dokument nicht gefunden'); return; }
-      const meta=await encrypt(JSON.stringify({name:original.name,desc:original.desc,size:original.size,path:original.path}),vaultCode);
+      const meta=await encrypt(JSON.stringify({name:snapshot.name,desc:snapshot.desc,size:snapshot.size,path:snapshot.path}),vaultCode);
       await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta,username:getUsername(),folder_id:targetFolderId})});
     }
     showToast('📁 Kopiert!');
@@ -781,20 +782,59 @@ async function previewDoc(path, name) {
 
     if (mime.startsWith('image/')) {
       const url=URL.createObjectURL(new Blob([dec],{type:mime}));
-      // zoom+pan with pinch and drag
       content.style.overflow='hidden';
-      content.innerHTML=`<div id="zoom-wrap" style="width:100%;height:100%;overflow:scroll;-webkit-overflow-scrolling:touch"><img id="zoom-img" src="${url}" style="display:block;max-width:100%;height:auto;border-radius:8px;transform-origin:top left;transition:transform 0.1s"></div>`;
+      content.innerHTML=`<div id="zoom-wrap" style="width:100%;height:100%;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:center"><img id="zoom-img" src="${url}" style="display:block;max-width:100%;height:auto;border-radius:8px;transform-origin:top center;user-select:none"></div>`;
       const wrap=document.getElementById('zoom-wrap');
       const img=document.getElementById('zoom-img');
-      let scale=1, lastDist=0;
-      wrap.addEventListener('touchstart',e=>{ if(e.touches.length===2) lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); },{passive:true});
-      wrap.addEventListener('touchmove',e=>{ if(e.touches.length===2){ e.preventDefault(); const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); scale=Math.min(Math.max(scale*(dist/lastDist),1),6); img.style.transform=`scale(${scale})`; img.style.maxWidth=scale>1?'none':'100%'; lastDist=dist; } },{passive:false});
-      wrap.addEventListener('dblclick',()=>{ scale=scale>1?1:3; img.style.transform=`scale(${scale})`; img.style.maxWidth=scale>1?'none':'100%'; });
+      let scale=1, startDist=0, startScale=1;
+      wrap.addEventListener('touchstart',e=>{
+        if(e.touches.length===2){
+          startDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+          startScale=scale;
+        }
+      },{passive:true});
+      wrap.addEventListener('touchmove',e=>{
+        if(e.touches.length===2){
+          e.preventDefault();
+          const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+          scale=Math.min(Math.max(startScale*(dist/startDist),1),6);
+          img.style.transform=`scale(${scale})`;
+          img.style.transformOrigin='top center';
+          img.style.maxWidth=scale>1?'none':'100%';
+        }
+      },{passive:false});
+      wrap.addEventListener('dblclick',()=>{
+        scale=scale>1?1:2.5;
+        img.style.transform=`scale(${scale})`;
+        img.style.maxWidth=scale>1?'none':'100%';
+      });
     }
     else if (ext==='pdf') {
-      // use Google Docs viewer for PDF — works on mobile without plugin
-      const url=URL.createObjectURL(new Blob([dec],{type:'application/pdf'}));
-      content.innerHTML=`<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px" allowfullscreen></iframe>`;
+      // PDF.js for mobile-compatible PDF rendering
+      content.style.overflow='auto';
+      content.innerHTML='<div style="color:#6e6e73;text-align:center;padding:20px"><span class="spinner"></span> PDF wird geladen…</div>';
+      const pdfData = new Uint8Array(dec);
+      const loadPdfJs = ()=>new Promise((res,rej)=>{
+        if(window.pdfjsLib){ res(); return; }
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload=()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; res(); };
+        s.onerror=rej;
+        document.head.appendChild(s);
+      });
+      await loadPdfJs();
+      const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;
+      content.innerHTML='<div id="pdf-pages" style="width:100%;display:flex;flex-direction:column;gap:8px;align-items:center"></div>';
+      const container=document.getElementById('pdf-pages');
+      for(let i=1;i<=pdfDoc.numPages;i++){
+        const page=await pdfDoc.getPage(i);
+        const vp=page.getViewport({scale: window.innerWidth/page.getViewport({scale:1}).width * 0.95});
+        const canvas=document.createElement('canvas');
+        canvas.width=vp.width; canvas.height=vp.height;
+        canvas.style.cssText='max-width:100%;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.4)';
+        await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+        container.appendChild(canvas);
+      }
     }
     else if (ext==='docx') {
       // render docx using mammoth.js
