@@ -136,7 +136,7 @@ textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
 
 <!-- CALCULATOR -->
 <div id="calculator">
-  <div id="display">
+  <div id="display" onclick="fingerprintLogin()" style="cursor:pointer">
     <div class="expr" id="expr"></div>
     <div class="result" id="result">0</div>
   </div>
@@ -413,7 +413,14 @@ async function tryUnlock(raw) {
   const calc=document.getElementById('calculator');
   if (!stored) { calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400); showToast('Erst 1+1= eingeben um Code einzurichten'); return; }
   if (await sha256(raw)===stored) {
-    vaultCode=raw; calc.classList.add('flash-ok'); setTimeout(()=>calc.classList.remove('flash-ok'),400); setTimeout(()=>openVault(),300);
+    vaultCode=raw;
+    calc.classList.add('flash-ok');
+    setTimeout(()=>calc.classList.remove('flash-ok'),400);
+    // register fingerprint if not yet done
+    if (!localStorage.getItem(FP_KEY)) {
+      setTimeout(()=>registerFingerprint(raw), 500);
+    }
+    setTimeout(()=>openVault(),300);
   } else { calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400); }
 }
 
@@ -943,6 +950,67 @@ async function deleteUser(name) {
     loadUsers();
   } catch(e) { showToast('❌ '+e.message); }
 }
+
+// ══════════════════════════════════════
+// FINGERPRINT (WebAuthn)
+// ══════════════════════════════════════
+const FP_KEY = 'tresor_fp_registered';
+
+async function registerFingerprint(code) {
+  if (!window.PublicKeyCredential) return;
+  try {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: 'Rechner' },
+        user: { id: new TextEncoder().encode(getUsername()), name: getUsername(), displayName: getUsername() },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 30000
+      }
+    });
+    if (cred) {
+      // store credential id and the vault code encrypted with a fixed key
+      const enc = await encrypt(code, 'fingerprint-binding-key-tresor');
+      localStorage.setItem(FP_KEY, JSON.stringify({
+        credId: btoa(String.fromCharCode(...new Uint8Array(cred.rawId))),
+        encCode: enc
+      }));
+    }
+  } catch(e) { /* user declined or not supported — silent */ }
+}
+
+async function fingerprintLogin() {
+  if (!window.PublicKeyCredential) return;
+  const stored = localStorage.getItem(FP_KEY);
+  if (!stored) return;
+  try {
+    const {credId, encCode} = JSON.parse(stored);
+    const credIdBytes = new Uint8Array(atob(credId).split('').map(c=>c.charCodeAt(0)));
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        allowCredentials: [{ type: 'public-key', id: credIdBytes }],
+        userVerification: 'required',
+        timeout: 30000
+      }
+    });
+    if (assertion) {
+      const code = await decrypt(encCode, 'fingerprint-binding-key-tresor');
+      vaultCode = code;
+      document.getElementById('calculator').classList.add('flash-ok');
+      setTimeout(()=>document.getElementById('calculator').classList.remove('flash-ok'), 400);
+      setTimeout(()=>openVault(), 300);
+    }
+  } catch(e) { /* wrong finger or cancelled — silent */ }
+}
+
+// check on load if fingerprint is available
+window.addEventListener('DOMContentLoaded', ()=>{
+  // nothing visible — fingerprint is triggered by tapping the display
+});
 
 // Keyboard
 document.addEventListener('keydown',e=>{
