@@ -135,9 +135,8 @@ textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
 </div>
 
 <!-- CALCULATOR -->
-<!-- Unsichtbare Fingerprint-Zone über dem ganzen Rechner -->
-<div onclick="fingerprintLogin()" style="position:fixed;top:0;left:0;right:0;height:40vh;z-index:1;cursor:default"></div>
 <div id="calculator">
+  <div id="display" onclick="fingerprintLogin()" style="cursor:pointer">
     <div class="expr" id="expr"></div>
     <div class="result" id="result">0</div>
   </div>
