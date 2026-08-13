@@ -291,8 +291,9 @@ textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
 // ══════════════════════════════════════
 const SUPABASE_URL   = 'https://ormpszktwwiahjooukjk.supabase.co';
 const SUPABASE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ybXBzemt0d3dpYWhqb291a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzM5NTAsImV4cCI6MjA5NjQ0OTk1MH0.Jz4rKTlrvRbfdxS1e8fRkwXeD3CJsITeC6Q4lDBjfCc';
+const FUNCTIONS_URL  = SUPABASE_URL + '/functions/v1/tresor-api';
 const STORAGE_BUCKET = 'tresor-docs';
-const VAULT_CODE_KEY = 'tresor_vault_hash';
+const VAULT_CODE_KEY = 'tresor_vault_hash'; // legacy, unused since server-side PIN check was added
 const USERNAME_KEY   = 'tresor_username';
 const ADMIN_RAW      = '1+1';
 
@@ -396,8 +397,14 @@ async function registerVaultCode(raw) {
   const username=document.getElementById('setup-username').value.trim();
   if (!username) { document.getElementById('setup-status').textContent='❌ Bitte Benutzername eingeben!'; return; }
   if (raw===ADMIN_RAW) { document.getElementById('setup-status').textContent='❌ Dieser Code ist reserviert.'; return; }
+  try {
+    await apiRegister(username, raw);
+  } catch(e) {
+    if (e.code==='exists') document.getElementById('setup-status').textContent='❌ Dieser Benutzername ist schon eingerichtet. Erst mit dem bisherigen Code entsperren.';
+    else document.getElementById('setup-status').textContent='❌ '+e.message;
+    return;
+  }
   localStorage.setItem(USERNAME_KEY, username);
-  localStorage.setItem(VAULT_CODE_KEY, await sha256(raw));
   document.getElementById('setup-status').textContent='✅ Gespeichert!';
   showToast('✅ Willkommen, '+username+'!');
   setTimeout(()=>{ closeSetup(); vaultCode=raw; openVault(); }, 800);
@@ -409,10 +416,9 @@ async function registerVaultCode(raw) {
 let vaultCode=null, currentFolderId=null, currentFolderName='';
 
 async function tryUnlock(raw) {
-  const stored=localStorage.getItem(VAULT_CODE_KEY);
   const calc=document.getElementById('calculator');
-  if (!stored) { calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400); showToast('Erst 1+1= eingeben um Code einzurichten'); return; }
-  if (await sha256(raw)===stored) {
+  try {
+    await apiLogin(getUsername(), raw);
     vaultCode=raw;
     calc.classList.add('flash-ok');
     setTimeout(()=>calc.classList.remove('flash-ok'),400);
@@ -421,7 +427,11 @@ async function tryUnlock(raw) {
       setTimeout(()=>registerFingerprint(raw), 500);
     }
     setTimeout(()=>openVault(),300);
-  } else { calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400); }
+  } catch(e) {
+    calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400);
+    if (e.code==='not_found') showToast('Erst ⚙️ 1+1= eingeben, um den Code einzurichten');
+    else if (e.code==='locked') showToast('🔒 Zu viele Fehlversuche — kurz warten');
+  }
 }
 
 function openVault() {
@@ -468,14 +478,23 @@ function switchInnerTab(name) {
 }
 
 // ══════════════════════════════════════
-// SUPABASE
+// TRESOR API (Edge Function — all data access is PIN-gated server-side,
+// the tables/storage themselves are locked down and unreachable directly)
 // ══════════════════════════════════════
-async function sbFetch(path, opts={}) {
-  const res=await fetch(SUPABASE_URL+path,{...opts,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
-  if (!res.ok) throw new Error(await res.text());
-  const ct=res.headers.get('content-type')||'';
-  return ct.includes('json')?res.json():res;
+async function apiCall(body) {
+  const res = await fetch(FUNCTIONS_URL, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  let parsed;
+  try { parsed = await res.json(); } catch { parsed = { ok:false, error:'bad_response' }; }
+  if (!parsed.ok) { const err = new Error(parsed.error || ('HTTP '+res.status)); err.code = parsed.error; throw err; }
+  return parsed;
 }
+function apiLogin(username, pin) { return apiCall({ action:'login', username, pin }); }
+function apiRegister(username, pin) { return apiCall({ action:'register', username, pin }); }
+function api(action, payload={}) { return apiCall({ action, username:getUsername(), pin:vaultCode, ...payload }); }
 
 // ══════════════════════════════════════
 // FOLDERS
@@ -487,7 +506,7 @@ async function createFolder() {
   if (!nameVal) { showToast('Bitte Ordnernamen eingeben'); return; }
   try {
     const enc=await encrypt(JSON.stringify({name:nameVal}), vaultCode);
-    await sbFetch('/rest/v1/tresor_folders',{method:'POST',body:JSON.stringify({data:enc,username:getUsername()})});
+    await api('folders.create', {data:enc});
     document.getElementById('folder-name-input').value='';
     showToast('📁 Ordner erstellt'); loadFolders();
   } catch(e) { showToast('❌ '+e.message); }
@@ -495,8 +514,7 @@ async function createFolder() {
 
 async function loadFolders() {
   try {
-    const u=getUsername();
-    const rows=await sbFetch(`/rest/v1/tresor_folders?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&order=created_at.asc`);
+    const rows=(await api('folders.list')).rows;
     allFolders=[];
     for (const row of rows) {
       try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allFolders.push({id:row.id,...obj}); } catch {}
@@ -510,7 +528,7 @@ async function loadFolders() {
 async function ensureDefaultFolder() {
   try {
     const enc=await encrypt(JSON.stringify({name:'Mein Leben'}),vaultCode);
-    await sbFetch('/rest/v1/tresor_folders',{method:'POST',body:JSON.stringify({data:enc,username:getUsername()})});
+    await api('folders.create', {data:enc});
     loadFolders();
   } catch(e) {}
 }
@@ -523,9 +541,8 @@ async function renderFolders() {
     // count items
     let pwCount=0, docCount=0;
     try {
-      const u=getUsername();
-      const pws=await sbFetch(`/rest/v1/tresor_passwords?select=id&username=eq.${encodeURIComponent(u)}&folder_id=eq.${f.id}`);
-      const docs=await sbFetch(`/rest/v1/tresor_docs?select=id&username=eq.${encodeURIComponent(u)}&folder_id=eq.${f.id}`);
+      const pws=(await api('passwords.list', {folder_id:f.id})).rows;
+      const docs=(await api('docs.list', {folder_id:f.id})).rows;
       pwCount=pws.length; docCount=docs.length;
     } catch {}
     const card=document.createElement('div');
@@ -546,16 +563,7 @@ async function renderFolders() {
 async function deleteFolder(id) {
   if (!confirm('Ordner und alle Inhalte löschen?')) return;
   try {
-    // delete all passwords and docs in folder first
-    const u=getUsername();
-    const pws=await sbFetch(`/rest/v1/tresor_passwords?select=id&username=eq.${encodeURIComponent(u)}&folder_id=eq.${id}`);
-    for (const p of pws) await sbFetch(`/rest/v1/tresor_passwords?id=eq.${p.id}`,{method:'DELETE'});
-    const docs=await sbFetch(`/rest/v1/tresor_docs?select=id,data&username=eq.${encodeURIComponent(u)}&folder_id=eq.${id}`);
-    for (const d of docs) {
-      try { const obj=JSON.parse(await decrypt(d.data,vaultCode)); await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${obj.path}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}); } catch {}
-      await sbFetch(`/rest/v1/tresor_docs?id=eq.${d.id}`,{method:'DELETE'});
-    }
-    await sbFetch(`/rest/v1/tresor_folders?id=eq.${id}`,{method:'DELETE'});
+    await api('folders.delete', {id}); // server cascades passwords/docs/storage
     showToast('🗑 Ordner gelöscht'); loadFolders();
   } catch(e) { showToast('❌ '+e.message); }
 }
@@ -587,7 +595,7 @@ async function savePassword() {
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Speichern…';
   try {
     const enc=await encrypt(JSON.stringify({name,user,pass}),vaultCode);
-    await sbFetch('/rest/v1/tresor_passwords',{method:'POST',body:JSON.stringify({data:enc,username:getUsername(),folder_id:currentFolderId})});
+    await api('passwords.create', {data:enc, folder_id:currentFolderId});
     document.getElementById('pw-name').value='';
     document.getElementById('pw-user').value='';
     document.getElementById('pw-pass').value='';
@@ -598,8 +606,7 @@ async function savePassword() {
 
 async function loadPasswords() {
   try {
-    const u=getUsername();
-    const rows=await sbFetch(`/rest/v1/tresor_passwords?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&folder_id=eq.${currentFolderId}&order=created_at.desc`);
+    const rows=(await api('passwords.list', {folder_id:currentFolderId})).rows;
     allPasswords=[];
     for (const row of rows) {
       try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allPasswords.push({id:row.id,...obj}); } catch {}
@@ -651,12 +658,11 @@ async function uploadFile(file) {
     const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,await file.arrayBuffer());
     const combined=new Uint8Array(12+enc.byteLength); combined.set(iv); combined.set(new Uint8Array(enc),12);
     fill.style.width='40%';
-    const path=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const res=await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/octet-stream'},body:new Blob([combined])});
+    let combinedBin=''; for (const b of combined) combinedBin+=String.fromCharCode(b);
+    const {path}=await api('storage.upload', {filename:file.name, fileBase64:btoa(combinedBin)});
     fill.style.width='75%';
-    if (!res.ok) throw new Error(await res.text());
     const meta=await encrypt(JSON.stringify({name:file.name,desc,size:file.size,path}),vaultCode);
-    await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta,username:getUsername(),folder_id:currentFolderId})});
+    await api('docs.create', {data:meta, folder_id:currentFolderId});
     fill.style.width='100%';
     setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},600);
     showToast('✅ Hochgeladen');
@@ -668,8 +674,7 @@ async function uploadFile(file) {
 
 async function loadDocs() {
   try {
-    const u=getUsername();
-    const rows=await sbFetch(`/rest/v1/tresor_docs?select=id,data,created_at&username=eq.${encodeURIComponent(u)}&folder_id=eq.${currentFolderId}&order=created_at.desc`);
+    const rows=(await api('docs.list', {folder_id:currentFolderId})).rows;
     allDocs=[];
     for (const row of rows) {
       try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allDocs.push({id:row.id,...obj}); } catch {}
@@ -695,7 +700,7 @@ function renderDocs(docs, container) {
         <button class="icon-btn" onclick="openCopyModal('doc','${obj.id}')" title="Kopieren" style="width:44px;height:44px;font-size:18px">📁</button>
         <button class="icon-btn" onclick="shareDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" title="Teilen" style="width:44px;height:44px;font-size:18px">📤</button>
         <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" style="width:44px;height:44px;font-size:18px">⬇️</button>
-        <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}','${escHtml(obj.path)}')" style="width:44px;height:44px;font-size:18px">🗑</button>
+        <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}')" style="width:44px;height:44px;font-size:18px">🗑</button>
       </div>`;
     list.appendChild(card);
   }
@@ -749,10 +754,10 @@ async function copyToFolder(targetFolderId) {
   try {
     if (type==='password') {
       const enc=await encrypt(JSON.stringify({name:snapshot.name,user:snapshot.user,pass:snapshot.pass}),vaultCode);
-      await sbFetch('/rest/v1/tresor_passwords',{method:'POST',body:JSON.stringify({data:enc,username:getUsername(),folder_id:targetFolderId})});
+      await api('passwords.create', {data:enc, folder_id:targetFolderId});
     } else {
       const meta=await encrypt(JSON.stringify({name:snapshot.name,desc:snapshot.desc,size:snapshot.size,path:snapshot.path}),vaultCode);
-      await sbFetch('/rest/v1/tresor_docs',{method:'POST',body:JSON.stringify({data:meta,username:getUsername(),folder_id:targetFolderId})});
+      await api('docs.create', {data:meta, folder_id:targetFolderId});
     }
     showToast('📁 Kopiert!');
   } catch(e) { showToast('❌ '+e.message); }
@@ -762,9 +767,8 @@ async function copyToFolder(targetFolderId) {
 // PREVIEW & DOWNLOAD & SHARE
 // ══════════════════════════════════════
 async function decryptFile(path) {
-  const res=await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-  if (!res.ok) throw new Error(await res.text());
-  const bytes=new Uint8Array(await res.arrayBuffer());
+  const {dataBase64}=await api('storage.download', {path});
+  const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
   const key=await deriveKey(vaultCode);
   return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
 }
@@ -929,11 +933,10 @@ async function shareDoc(path, name) {
   } catch(e) { if(e.name!=='AbortError') showToast('❌ '+e.message); }
 }
 
-async function deleteEntry(table, id, storagePath=null) {
+async function deleteEntry(table, id) {
   if (!confirm('Wirklich löschen?')) return;
   try {
-    await sbFetch(`/rest/v1/tresor_${table}?id=eq.${id}`,{method:'DELETE'});
-    if (storagePath) await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${storagePath}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    await api(table+'.delete', {id}); // server also removes the storage file for docs
     showToast('🗑 Gelöscht');
     if (table==='passwords') loadPasswords(); else loadDocs();
   } catch(e) { showToast('❌ '+e.message); }
@@ -949,10 +952,9 @@ async function globalSearch(query) {
 
   container.innerHTML='<div class="empty-state"><span class="spinner"></span>Suche…</div>';
   try {
-    const u=getUsername();
     // load all passwords and docs across all folders
-    const pwRows=await sbFetch(`/rest/v1/tresor_passwords?select=id,data,folder_id&username=eq.${encodeURIComponent(u)}`);
-    const docRows=await sbFetch(`/rest/v1/tresor_docs?select=id,data,folder_id&username=eq.${encodeURIComponent(u)}`);
+    const pwRows=(await api('passwords.listAll')).rows;
+    const docRows=(await api('docs.listAll')).rows;
 
     const pwAll=[], docAll=[];
     for (const r of pwRows) { try { const o=JSON.parse(await decrypt(r.data,vaultCode)); pwAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
@@ -1037,24 +1039,15 @@ async function loadUsers() {
   const list = document.getElementById('users-list');
   list.innerHTML = '<div class="empty-state"><span class="spinner"></span>Lade…</div>';
   try {
-    // get all unique usernames from folders
-    const folders = await sbFetch('/rest/v1/tresor_folders?select=username');
-    const pws     = await sbFetch('/rest/v1/tresor_passwords?select=username');
-    const docs    = await sbFetch('/rest/v1/tresor_docs?select=username');
+    const {users:allNames, counts} = await api('users.list');
 
-    const allNames = new Set([
-      ...folders.map(r=>r.username),
-      ...pws.map(r=>r.username),
-      ...docs.map(r=>r.username)
-    ].filter(Boolean));
-
-    if (!allNames.size) { list.innerHTML='<div class="empty-state">Keine Benutzer gefunden</div>'; return; }
+    if (!allNames.length) { list.innerHTML='<div class="empty-state">Keine Benutzer gefunden</div>'; return; }
 
     list.innerHTML = '';
     for (const name of allNames) {
-      const pwCount  = pws.filter(r=>r.username===name).length;
-      const docCount = docs.filter(r=>r.username===name).length;
-      const folderCount = folders.filter(r=>r.username===name).length;
+      const pwCount  = counts[name]?.pw || 0;
+      const docCount = counts[name]?.docs || 0;
+      const folderCount = counts[name]?.folders || 0;
       const isCurrent = name === getUsername();
 
       const card = document.createElement('div');
@@ -1074,17 +1067,7 @@ async function loadUsers() {
 async function deleteUser(name) {
   if (!confirm(`Benutzer "${name}" und ALLE Daten löschen?`)) return;
   try {
-    // delete storage files first
-    const docs = await sbFetch(`/rest/v1/tresor_docs?select=id,data&username=eq.${encodeURIComponent(name)}`);
-    for (const d of docs) {
-      try {
-        const obj = JSON.parse(await decrypt(d.data, vaultCode));
-        await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${obj.path}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-      } catch {}
-      await sbFetch(`/rest/v1/tresor_docs?id=eq.${d.id}`,{method:'DELETE'});
-    }
-    await sbFetch(`/rest/v1/tresor_passwords?username=eq.${encodeURIComponent(name)}`,{method:'DELETE'});
-    await sbFetch(`/rest/v1/tresor_folders?username=eq.${encodeURIComponent(name)}`,{method:'DELETE'});
+    await api('users.delete', {target:name});
     showToast(`🗑 Benutzer "${name}" gelöscht`);
     loadUsers();
   } catch(e) { showToast('❌ '+e.message); }
@@ -1138,6 +1121,7 @@ async function fingerprintLogin() {
     });
     if (assertion) {
       const code = await decrypt(encCode, 'fingerprint-binding-key-tresor');
+      await apiLogin(getUsername(), code); // still verify server-side, don't just trust local storage
       vaultCode = code;
       document.getElementById('calculator').classList.add('flash-ok');
       setTimeout(()=>document.getElementById('calculator').classList.remove('flash-ok'), 400);
