@@ -299,6 +299,22 @@ const ADMIN_RAW      = '1+1';
 
 function getUsername() { return localStorage.getItem(USERNAME_KEY) || 'default'; }
 
+// ── NOTTÜR: lokal gemerkten Benutzernamen wiederherstellen ──
+// Wenn der Browser-Speicher gelöscht wurde, vergisst das Gerät, welcher
+// Benutzername es war (die Daten selbst bleiben unberührt in der Datenbank).
+// Aufruf einmalig: diese Seite mit ?switchuser=jonas in der Adresse öffnen.
+// Ändert NUR den lokal gemerkten Namen, rührt keine Passwörter/Ordner an.
+(function () {
+  try {
+    const params = new URLSearchParams(location.search);
+    const su = params.get('switchuser');
+    if (su) {
+      localStorage.setItem(USERNAME_KEY, su);
+      alert('Lokaler Benutzername auf "' + su + '" gesetzt.\n\nJetzt mit dem PIN dieses Benutzers entsperren (normale Rechner-Eingabe, nicht ⚙️ Einrichten).');
+    }
+  } catch (e) {}
+})();
+
 // ══════════════════════════════════════
 // CALCULATOR
 // ══════════════════════════════════════
