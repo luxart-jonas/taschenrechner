@@ -1234,14 +1234,14 @@ async function registerFingerprint(code) {
         rp: { name: 'Rechner' },
         user: { id: new TextEncoder().encode(getUsername()), name: getUsername(), displayName: getUsername() },
         pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'required', requireResidentKey: true },
         extensions: { prf: {} }, // nur Fähigkeit abfragen, noch nicht auswerten
         timeout: 30000
       }
     });
     if (!cred) return;
     const prfSupported = cred.getClientExtensionResults?.().prf?.enabled;
-    if (!prfSupported) { showToast('ℹ️ Schnellentsperrung: Gerät/Browser unterstützt das nicht'); return; }
+    if (!prfSupported) { showToast('ℹ️ PRF bei Erstellung nicht verfügbar — Gerät/Browser unterstützt das nicht'); return; }
     // Viele Plattformen liefern den eigentlichen PRF-Wert erst bei einer
     // echten Authentifizierung, nicht schon bei der Erstellung — daher
     // direkt im Anschluss einmal "entsperren" (zweiter Biometrie-Prompt),
@@ -1257,7 +1257,7 @@ async function registerFingerprint(code) {
       }
     });
     const prfResult = assertion?.getClientExtensionResults?.().prf?.results?.first;
-    if (!prfResult) { showToast('ℹ️ Schnellentsperrung: Gerät/Browser unterstützt das nicht'); return; }
+    if (!prfResult) { showToast('ℹ️ PRF bei Erstellung ok, bei Abfrage aber kein Ergebnis'); return; }
     const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
     const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['encrypt']);
     const iv = crypto.getRandomValues(new Uint8Array(12));
