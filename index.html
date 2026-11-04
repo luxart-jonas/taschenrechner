@@ -423,6 +423,14 @@ async function legacyDecrypt(b64, code) {
   const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
   return new TextDecoder().decode(dec);
 }
+// ── Liest einen Eintrag egal ob schon neu oder noch alt verschlüsselt,
+//    damit beim Anzeigen NIE still etwas fehlt, auch wenn die
+//    Hintergrund-Migration (migrateReencryptAll) noch nicht bei diesem
+//    Eintrag angekommen ist. ──
+async function decryptAny(b64, code) {
+  try { return await decrypt(b64, code); }
+  catch(e) { return await legacyDecrypt(b64, code); }
+}
 
 async function encrypt(text, code) {
   const key=await deriveKey(code), iv=crypto.getRandomValues(new Uint8Array(12));
@@ -499,7 +507,6 @@ async function tryUnlock(raw) {
     vaultCode=raw; currentAuthToken=authToken;
     calc.classList.add('flash-ok');
     setTimeout(()=>calc.classList.remove('flash-ok'),400);
-    if (!salted.migrated) await migrateReencryptAll(raw);
     // register fingerprint if not yet done (or if an old-format entry is stuck there)
     const fpStored = localStorage.getItem(FP_KEY);
     if (!fpStored || !fpDataValid(fpStored)) {
@@ -507,6 +514,12 @@ async function tryUnlock(raw) {
       setTimeout(()=>registerFingerprint(raw), 500);
     }
     setTimeout(()=>openVault(),300);
+    // Umverschlüsselung läuft im Hintergrund weiter (blockiert die
+    // Ansicht nicht) und ist sicher wiederholbar: sie prüft jeden
+    // Eintrag selbst, ob er noch das alte Schema hat, und holt bei
+    // einer vorherigen abgebrochenen Sitzung (z.B. Tab geschlossen,
+    // während große Dateien noch hochgeladen wurden) automatisch nach.
+    migrateReencryptAll(raw);
   } catch(e) {
     calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400);
     if (e.code==='not_found') showToast('Erst ⚙️ 1+1= eingeben, um den Code einzurichten');
@@ -514,32 +527,44 @@ async function tryUnlock(raw) {
   }
 }
 
-// ── Einmalige Migration: alte Einträge (Passwörter, Dokumente samt
-//    Dateien, Ordner) wurden mit dem alten, ungesalzenen Schema
-//    verschlüsselt. Hier werden sie client-seitig mit dem alten Code
-//    entschlüsselt und sofort mit dem neuen PBKDF2-Schema (und, bei
-//    Dokumenten, einem neuen Speicherpfad) neu verschlüsselt. Die
-//    alten Dateien im Storage werden dabei NICHT gelöscht (bleiben
-//    als zusätzliches Backup liegen). ──
+// ── Wiederholbare Migration: prüft bei JEDEM Entsperren erneut, ob
+//    noch Einträge (Ordner, Passwörter, Dokumente samt Dateien) mit
+//    dem alten, ungesalzenen Schema verschlüsselt sind, und zieht nur
+//    die fehlenden nach — nicht nur einmalig beim allerersten Login.
+//    Das macht es robust gegen eine abgebrochene vorherige Sitzung
+//    (z.B. Tab geschlossen/Verbindung weg während große Dateien noch
+//    hochgeladen wurden: nur die bis dahin geschafften Einträge waren
+//    sonst migriert, der Rest blieb unsichtbar auf dem alten Schema
+//    stehen). Läuft im Hintergrund, blockiert die Vault-Ansicht nicht;
+//    alte Dateien im Storage werden dabei NICHT gelöscht (bleiben als
+//    zusätzliches Backup liegen). ──
 async function migrateReencryptAll(pin) {
-  showToast('🔄 Sicherheits-Update läuft…');
+  let didWork=false, failed=0;
   try {
     const folderRows=(await api('folders.list')).rows;
     for (const row of folderRows) {
+      try { await decrypt(row.data,pin); continue; } catch(e) {} // schon neu — überspringen
       try {
         const plain=await legacyDecrypt(row.data,pin);
         await api('folders.update', {id:row.id, data: await encrypt(plain,pin)});
-      } catch(e) {}
+        didWork=true;
+      } catch(e) { failed++; }
     }
     const pwRows=(await api('passwords.listAll')).rows;
     for (const row of pwRows) {
+      try { await decrypt(row.data,pin); continue; } catch(e) {}
       try {
         const plain=await legacyDecrypt(row.data,pin);
         await api('passwords.update', {id:row.id, data: await encrypt(plain,pin)});
-      } catch(e) {}
+        didWork=true;
+      } catch(e) { failed++; }
     }
     const docRows=(await api('docs.listAll')).rows;
+    let docsTodo=0;
+    for (const row of docRows) { try { await decrypt(row.data,pin); } catch(e) { docsTodo++; } }
+    if (docsTodo) showToast(`🔄 Sicherheits-Update: ${docsTodo} Dokument(e) werden nachgezogen…`);
     for (const row of docRows) {
+      try { await decrypt(row.data,pin); continue; } catch(e) {} // schon neu — überspringen
       try {
         const plain=await legacyDecrypt(row.data,pin);
         const obj=JSON.parse(plain);
@@ -555,14 +580,18 @@ async function migrateReencryptAll(pin) {
             const combined=new Uint8Array(12+reencFile.byteLength); combined.set(iv2); combined.set(new Uint8Array(reencFile),12);
             const up=await api('storage.upload', {filename:obj.name||'file', fileBase64: bytesToB64(combined)});
             newPath=up.path;
-          } catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem migrieren */ }
+          } catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem migrieren, alter Pfad bleibt als Fallback */ }
         }
         const newMeta=await encrypt(JSON.stringify({...obj, path:newPath}), pin);
         await api('docs.update', {id:row.id, data:newMeta, storage_path:newPath});
-      } catch(e) {}
+        didWork=true;
+      } catch(e) { failed++; }
     }
-    showToast('✅ Sicherheits-Update abgeschlossen');
-  } catch(e) { showToast('⚠️ Sicherheits-Update unvollständig: '+e.message); }
+    if (didWork) {
+      showToast(failed ? `✅ Sicherheits-Update: Rest nachgezogen (${failed} übersprungen)` : '✅ Sicherheits-Update abgeschlossen');
+      if (document.getElementById('vault').classList.contains('open')) { loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); } }
+    }
+  } catch(e) { /* nichts geschafft diese Sitzung — beim nächsten Entsperren wird's automatisch erneut versucht */ }
 }
 
 function openVault() {
@@ -646,7 +675,7 @@ async function loadFolders() {
     const rows=(await api('folders.list')).rows;
     allFolders=[];
     for (const row of rows) {
-      try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allFolders.push({id:row.id,...obj}); } catch {}
+      try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allFolders.push({id:row.id,...obj}); } catch {}
     }
     // ensure "Mein Leben" exists
     if (!allFolders.length) { await ensureDefaultFolder(); return; }
@@ -738,7 +767,7 @@ async function loadPasswords() {
     const rows=(await api('passwords.list', {folder_id:currentFolderId})).rows;
     allPasswords=[];
     for (const row of rows) {
-      try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allPasswords.push({id:row.id,...obj}); } catch {}
+      try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allPasswords.push({id:row.id,...obj}); } catch {}
     }
     renderPasswords(allPasswords);
   } catch(e) { showToast('Ladefehler: '+e.message); }
@@ -806,7 +835,7 @@ async function loadDocs() {
     const rows=(await api('docs.list', {folder_id:currentFolderId})).rows;
     allDocs=[];
     for (const row of rows) {
-      try { const obj=JSON.parse(await decrypt(row.data,vaultCode)); allDocs.push({id:row.id,...obj}); } catch {}
+      try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allDocs.push({id:row.id,...obj}); } catch {}
     }
     renderDocs(allDocs);
   } catch(e) { showToast('Ladefehler: '+e.message); }
@@ -898,8 +927,13 @@ async function copyToFolder(targetFolderId) {
 async function decryptFile(path) {
   const {dataBase64}=await api('storage.download', {path});
   const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
-  const key=await deriveKey(vaultCode);
-  return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+  try {
+    const key=await deriveKey(vaultCode);
+    return await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+  } catch(e) {
+    const legacyKey=await legacyDeriveKey(vaultCode); // Datei noch nicht migriert
+    return await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},legacyKey,bytes.slice(12));
+  }
 }
 
 // ── ZOOM HELPER ──
@@ -1086,8 +1120,8 @@ async function globalSearch(query) {
     const docRows=(await api('docs.listAll')).rows;
 
     const pwAll=[], docAll=[];
-    for (const r of pwRows) { try { const o=JSON.parse(await decrypt(r.data,vaultCode)); pwAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
-    for (const r of docRows) { try { const o=JSON.parse(await decrypt(r.data,vaultCode)); docAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
+    for (const r of pwRows) { try { const o=JSON.parse(await decryptAny(r.data,vaultCode)); pwAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
+    for (const r of docRows) { try { const o=JSON.parse(await decryptAny(r.data,vaultCode)); docAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
 
     const pwMatches=pwAll.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q)));
     const docMatches=docAll.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q)));
