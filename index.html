@@ -500,8 +500,10 @@ async function tryUnlock(raw) {
     calc.classList.add('flash-ok');
     setTimeout(()=>calc.classList.remove('flash-ok'),400);
     if (!salted.migrated) await migrateReencryptAll(raw);
-    // register fingerprint if not yet done
-    if (!localStorage.getItem(FP_KEY)) {
+    // register fingerprint if not yet done (or if an old-format entry is stuck there)
+    const fpStored = localStorage.getItem(FP_KEY);
+    if (!fpStored || !fpDataValid(fpStored)) {
+      if (fpStored) localStorage.removeItem(FP_KEY);
       setTimeout(()=>registerFingerprint(raw), 500);
     }
     setTimeout(()=>openVault(),300);
@@ -1205,6 +1207,16 @@ async function deleteUser(name) {
 // ══════════════════════════════════════
 const FP_KEY = 'tresor_fp_registered';
 
+// gültig ist nur das neue PRF-Format {credId, prfSalt, wrappedCode}; ein
+// Eintrag vom alten (unsicheren) Schema hat stattdessen "encCode" und
+// muss verworfen werden, damit automatisch neu registriert wird.
+function fpDataValid(raw) {
+  try {
+    const o = JSON.parse(raw);
+    return !!(o && o.credId && o.prfSalt && o.wrappedCode);
+  } catch(e) { return false; }
+}
+
 // ── Biometrische Schnell-Entsperrung: der Code wird NUR noch mit einem
 //    Schlüssel "gewrapped", den die WebAuthn-PRF-Erweiterung liefert —
 //    der existiert ausschließlich NACH erfolgreicher Biometrie-Prüfung
@@ -1230,7 +1242,7 @@ async function registerFingerprint(code) {
     });
     if (!cred) return;
     const prfResult = cred.getClientExtensionResults?.().prf?.results?.first;
-    if (!prfResult) return; // Gerät/Browser unterstützt PRF nicht — Feature bleibt einfach aus
+    if (!prfResult) { showToast('ℹ️ Schnellentsperrung: Gerät/Browser unterstützt das nicht'); return; }
     const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
     const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['encrypt']);
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -1248,6 +1260,13 @@ async function fingerprintLogin() {
   if (!window.PublicKeyCredential) return;
   const stored = localStorage.getItem(FP_KEY);
   if (!stored) return;
+  if (!fpDataValid(stored)) {
+    // alter Eintrag (Vorgänger-Schema) — verwerfen, nächstes manuelles
+    // Entsperren registriert automatisch neu im sicheren Format
+    localStorage.removeItem(FP_KEY);
+    showToast('ℹ️ Schnellentsperrung muss neu eingerichtet werden — bitte Code eingeben');
+    return;
+  }
   try {
     const {credId, prfSalt, wrappedCode} = JSON.parse(stored);
     const credIdBytes = b64ToBytes(credId);
