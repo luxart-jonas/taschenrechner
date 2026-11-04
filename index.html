@@ -404,11 +404,23 @@ async function deriveAuthToken(code, saltB64) {
   const bits = await pbkdf2Bits(code, b64ToBytes(saltB64), 'tresor-auth-v1', 256);
   return bytesToB64(bits);
 }
+async function deriveKeyWithSalt(code, saltB64) {
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  const salt = new Uint8Array([...b64ToBytes(saltB64), ...new TextEncoder().encode('tresor-enc-v1')]);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
 async function deriveKey(code) {
   if (!currentSalt) throw new Error('Kein Salt geladen — bitte neu entsperren.');
-  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
-  const salt = new Uint8Array([...b64ToBytes(currentSalt), ...new TextEncoder().encode('tresor-enc-v1')]);
-  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+  return deriveKeyWithSalt(code, currentSalt);
+}
+async function encryptWithKey(text, key) {
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
+  const out=new Uint8Array(12+enc.byteLength); out.set(iv); out.set(new Uint8Array(enc),12);
+  return btoa(String.fromCharCode(...out));
+}
+async function decryptBytesWithKey(bytes, key) {
+  return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
 }
 
 // ── LEGACY (vor 2026-11): Schlüssel direkt aus dem gepaddeten Code,
@@ -592,6 +604,104 @@ async function migrateReencryptAll(pin) {
       if (document.getElementById('vault').classList.contains('open')) { loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); } }
     }
   } catch(e) { /* nichts geschafft diese Sitzung — beim nächsten Entsperren wird's automatisch erneut versucht */ }
+}
+
+// ══════════════════════════════════════
+// CODE ÄNDERN
+// ══════════════════════════════════════
+// Wechselt den Tresor-Code: neuer Salt + neuer authToken wird dem Server
+// gemeldet (noch mit dem ALTEN authToken authentifiziert), danach wird
+// JEDER Eintrag (Ordner, Passwörter, Dokumente + Dateien) mit dem neuen
+// Code neu verschlüsselt. Läuft alles clientseitig — der Server sieht
+// weder alten noch neuen Code, nur die beiden abgeleiteten authToken.
+async function changeVaultCode() {
+  if (!vaultCode || !currentSalt) { showToast('❌ Bitte erst entsperren'); return; }
+  const oldRaw = window.prompt('Zur Bestätigung: aktuellen Code eingeben');
+  if (oldRaw === null) return;
+  if (oldRaw !== vaultCode) { showToast('❌ Aktueller Code stimmt nicht'); return; }
+  const newRaw = window.prompt('Neuen Code eingeben:');
+  if (newRaw === null || !newRaw) return;
+  if (newRaw === ADMIN_RAW) { showToast('❌ Dieser Code ist reserviert'); return; }
+  const newRaw2 = window.prompt('Neuen Code zur Bestätigung erneut eingeben:');
+  if (newRaw2 !== newRaw) { showToast('❌ Codes stimmten nicht überein — nichts geändert'); return; }
+
+  showToast('🔄 Code wird geändert, bitte warten…');
+  const oldRawSaved = vaultCode, oldSaltSaved = currentSalt;
+  try {
+    const oldKey = await deriveKeyWithSalt(oldRawSaved, oldSaltSaved);
+    const newSaltBytes = crypto.getRandomValues(new Uint8Array(16));
+    const newSaltB64 = bytesToB64(newSaltBytes);
+    const newAuthToken = await deriveAuthToken(newRaw, newSaltB64);
+    const newKey = await deriveKeyWithSalt(newRaw, newSaltB64);
+
+    // Server umstellen — läuft noch mit dem alten authToken (currentAuthToken ist noch alt)
+    await api('account.changeCode', { newSalt: newSaltB64, newAuthToken });
+
+    // Hilfsfunktion: liest einen Eintrag egal ob neues oder altes Schema,
+    // mit dem ALTEN Schlüssel (der Server-Salt ist ja schon umgestellt,
+    // aber lokal brauchen wir für die Entschlüsselung noch den alten).
+    async function readOld(b64) {
+      try {
+        const bytes = b64ToBytes(b64);
+        const dec = await decryptBytesWithKey(bytes, oldKey);
+        return new TextDecoder().decode(dec);
+      } catch(e) { return await legacyDecrypt(b64, oldRawSaved); }
+    }
+    async function writeNew(text) { return encryptWithKey(text, newKey); }
+
+    let failed = 0;
+    const folderRows = (await api('folders.list')).rows;
+    for (const row of folderRows) {
+      try { await api('folders.update', { id: row.id, data: await writeNew(await readOld(row.data)) }); }
+      catch(e) { failed++; }
+    }
+    const pwRows = (await api('passwords.listAll')).rows;
+    for (const row of pwRows) {
+      try { await api('passwords.update', { id: row.id, data: await writeNew(await readOld(row.data)) }); }
+      catch(e) { failed++; }
+    }
+    const docRows = (await api('docs.listAll')).rows;
+    for (const row of docRows) {
+      try {
+        const plain = await readOld(row.data);
+        const obj = JSON.parse(plain);
+        let newPath = obj.path || null;
+        if (obj.path) {
+          try {
+            const {dataBase64} = await api('storage.download', {path: obj.path});
+            const bytes = b64ToBytes(dataBase64);
+            let fileBytes;
+            try { fileBytes = await decryptBytesWithKey(bytes, oldKey); }
+            catch(e) {
+              const legacyKey = await legacyDeriveKey(oldRawSaved);
+              fileBytes = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, legacyKey, bytes.slice(12));
+            }
+            const iv2 = crypto.getRandomValues(new Uint8Array(12));
+            const reenc = await crypto.subtle.encrypt({name:'AES-GCM', iv:iv2}, newKey, fileBytes);
+            const combined = new Uint8Array(12+reenc.byteLength); combined.set(iv2); combined.set(new Uint8Array(reenc),12);
+            const up = await api('storage.upload', {filename: obj.name||'file', fileBase64: bytesToB64(combined)});
+            newPath = up.path;
+            await api('storage.delete', {path: obj.path}).catch(()=>{});
+          } catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem umstellen, Pfad bleibt wie er war */ }
+        }
+        const newMeta = await writeNew(JSON.stringify({...obj, path:newPath}));
+        await api('docs.update', {id: row.id, data: newMeta, storage_path: newPath});
+      } catch(e) { failed++; }
+    }
+
+    // ab jetzt gilt überall der neue Code
+    currentSalt = newSaltB64; currentAuthToken = newAuthToken; vaultCode = newRaw;
+
+    // alte Fingerabdruck-Freischaltung war mit dem alten Code verknüpft —
+    // verwerfen und mit dem neuen Code automatisch neu einrichten
+    const hadFp = fpDataValid(localStorage.getItem(FP_KEY));
+    if (hadFp) { localStorage.removeItem(FP_KEY); setTimeout(()=>registerFingerprint(newRaw), 500); }
+
+    showToast(failed ? `✅ Code geändert (${failed} Einträge übersprungen — bitte prüfen)` : '✅ Code erfolgreich geändert');
+    loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); }
+  } catch(e) {
+    showToast('❌ Fehler beim Ändern: ' + (e && e.message ? e.message : 'unbekannt'));
+  }
 }
 
 function openVault() {
@@ -1220,6 +1330,7 @@ async function loadUsers() {
           <div style="color:#f5f5f7;font-size:16px;font-weight:600">${escHtml(name)} ${isCurrent?'<span style="color:#ff9f0a;font-size:12px">(aktiv)</span>':''}</div>
           <div style="color:#6e6e73;font-size:12px;margin-top:2px">${folderCount} Ordner · ${pwCount} Passwörter · ${docCount} Dokumente</div>
         </div>
+        ${isCurrent ? `<button class="icon-btn" onclick="changeVaultCode()" title="Code ändern">🔑</button>` : ''}
         ${!isCurrent ? `<button class="icon-btn danger" onclick="deleteUser('${escHtml(name)}')" title="Löschen">🗑</button>` : ''}
       `;
       list.appendChild(card);
