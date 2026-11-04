@@ -373,9 +373,57 @@ async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-async function deriveKey(code) {
-  return crypto.subtle.importKey('raw', new TextEncoder().encode(code.padEnd(32,'0').slice(0,32)), 'AES-GCM', false, ['encrypt','decrypt']);
+
+// ══════════════════════════════════════════════════════════════════
+// ZERO-KNOWLEDGE KEY DERIVATION (seit 2026-11)
+// ──────────────────────────────────────────────────────────────────
+// Aus dem Tresor-Code werden zwei VOLLSTÄNDIG getrennte Werte per
+// PBKDF2 abgeleitet, mit unterschiedlichem "info"-Kontext, damit der
+// eine aus dem anderen nicht rekonstruierbar ist:
+//   - authToken: geht an den Server, nur zum Login-Nachweis. Der
+//                 Server speichert davon nur einen Hash und kann
+//                 daraus NIE den Verschlüsselungsschlüssel gewinnen.
+//   - encKey:    der echte AES-256-Schlüssel. Verlässt den Browser
+//                 NIE, wird NIE übertragen oder geloggt.
+// currentSalt kommt vom Server (nicht geheim, nur Zufallswert) und
+// wird einmal pro Sitzung beim Entsperren gesetzt.
+// ══════════════════════════════════════════════════════════════════
+const KDF_ITER = 300000;
+let currentSalt = null, currentAuthToken = null;
+
+function b64ToBytes(b64) { return Uint8Array.from(atob(b64), c=>c.charCodeAt(0)); }
+function bytesToB64(bytes) { let bin=''; for (const b of bytes) bin+=String.fromCharCode(b); return btoa(bin); }
+
+async function pbkdf2Bits(code, saltBytes, info, bitLen) {
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+  const salt = new Uint8Array([...saltBytes, ...new TextEncoder().encode(info)]);
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, bitLen);
+  return new Uint8Array(bits);
 }
+async function deriveAuthToken(code, saltB64) {
+  const bits = await pbkdf2Bits(code, b64ToBytes(saltB64), 'tresor-auth-v1', 256);
+  return bytesToB64(bits);
+}
+async function deriveKey(code) {
+  if (!currentSalt) throw new Error('Kein Salt geladen — bitte neu entsperren.');
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  const salt = new Uint8Array([...b64ToBytes(currentSalt), ...new TextEncoder().encode('tresor-enc-v1')]);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
+
+// ── LEGACY (vor 2026-11): Schlüssel direkt aus dem gepaddeten Code,
+//    kein Salt, keine Streckung. Wird NUR noch für die einmalige
+//    Migration alter Einträge gebraucht, danach nie wieder benutzt. ──
+async function legacyDeriveKey(code) {
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(code.padEnd(32,'0').slice(0,32)), 'AES-GCM', false, ['decrypt']);
+}
+async function legacyDecrypt(b64, code) {
+  const bytes=new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
+  const key=await legacyDeriveKey(code);
+  const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+  return new TextDecoder().decode(dec);
+}
+
 async function encrypt(text, code) {
   const key=await deriveKey(code), iv=crypto.getRandomValues(new Uint8Array(12));
   const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
@@ -414,7 +462,10 @@ async function registerVaultCode(raw) {
   if (!username) { document.getElementById('setup-status').textContent='❌ Bitte Benutzername eingeben!'; return; }
   if (raw===ADMIN_RAW) { document.getElementById('setup-status').textContent='❌ Dieser Code ist reserviert.'; return; }
   try {
-    await apiRegister(username, raw);
+    const saltB64 = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+    const authToken = await deriveAuthToken(raw, saltB64);
+    await apiCall({ action:'register', username, salt:saltB64, authToken });
+    currentSalt = saltB64; currentAuthToken = authToken;
   } catch(e) {
     if (e.code==='exists') document.getElementById('setup-status').textContent='❌ Dieser Benutzername ist schon eingerichtet. Erst mit dem bisherigen Code entsperren.';
     else document.getElementById('setup-status').textContent='❌ '+e.message;
@@ -433,11 +484,22 @@ let vaultCode=null, currentFolderId=null, currentFolderName='';
 
 async function tryUnlock(raw) {
   const calc=document.getElementById('calculator');
+  const username=getUsername();
   try {
-    await apiLogin(getUsername(), raw);
-    vaultCode=raw;
+    const salted = await apiCall({ action:'getSalt', username });
+    currentSalt = salted.salt;
+    const authToken = await deriveAuthToken(raw, currentSalt);
+    if (salted.migrated) {
+      await apiCall({ action:'login', username, authToken });
+    } else {
+      // Konto von vor dem Sicherheits-Update (Nov 2026): einmalig mit
+      // dem alten Code verifizieren, dann auf das neue Schema heben.
+      await apiCall({ action:'migrate', username, pin:raw, authToken });
+    }
+    vaultCode=raw; currentAuthToken=authToken;
     calc.classList.add('flash-ok');
     setTimeout(()=>calc.classList.remove('flash-ok'),400);
+    if (!salted.migrated) await migrateReencryptAll(raw);
     // register fingerprint if not yet done
     if (!localStorage.getItem(FP_KEY)) {
       setTimeout(()=>registerFingerprint(raw), 500);
@@ -450,6 +512,57 @@ async function tryUnlock(raw) {
   }
 }
 
+// ── Einmalige Migration: alte Einträge (Passwörter, Dokumente samt
+//    Dateien, Ordner) wurden mit dem alten, ungesalzenen Schema
+//    verschlüsselt. Hier werden sie client-seitig mit dem alten Code
+//    entschlüsselt und sofort mit dem neuen PBKDF2-Schema (und, bei
+//    Dokumenten, einem neuen Speicherpfad) neu verschlüsselt. Die
+//    alten Dateien im Storage werden dabei NICHT gelöscht (bleiben
+//    als zusätzliches Backup liegen). ──
+async function migrateReencryptAll(pin) {
+  showToast('🔄 Sicherheits-Update läuft…');
+  try {
+    const folderRows=(await api('folders.list')).rows;
+    for (const row of folderRows) {
+      try {
+        const plain=await legacyDecrypt(row.data,pin);
+        await api('folders.update', {id:row.id, data: await encrypt(plain,pin)});
+      } catch(e) {}
+    }
+    const pwRows=(await api('passwords.listAll')).rows;
+    for (const row of pwRows) {
+      try {
+        const plain=await legacyDecrypt(row.data,pin);
+        await api('passwords.update', {id:row.id, data: await encrypt(plain,pin)});
+      } catch(e) {}
+    }
+    const docRows=(await api('docs.listAll')).rows;
+    for (const row of docRows) {
+      try {
+        const plain=await legacyDecrypt(row.data,pin);
+        const obj=JSON.parse(plain);
+        let newPath=obj.path||null;
+        if (obj.path) {
+          try {
+            const {dataBase64}=await api('storage.download', {path:obj.path});
+            const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
+            const legacyKey=await legacyDeriveKey(pin);
+            const plainFile=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, legacyKey, bytes.slice(12));
+            const newKey=await deriveKey(pin), iv2=crypto.getRandomValues(new Uint8Array(12));
+            const reencFile=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv2}, newKey, plainFile);
+            const combined=new Uint8Array(12+reencFile.byteLength); combined.set(iv2); combined.set(new Uint8Array(reencFile),12);
+            const up=await api('storage.upload', {filename:obj.name||'file', fileBase64: bytesToB64(combined)});
+            newPath=up.path;
+          } catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem migrieren */ }
+        }
+        const newMeta=await encrypt(JSON.stringify({...obj, path:newPath}), pin);
+        await api('docs.update', {id:row.id, data:newMeta, storage_path:newPath});
+      } catch(e) {}
+    }
+    showToast('✅ Sicherheits-Update abgeschlossen');
+  } catch(e) { showToast('⚠️ Sicherheits-Update unvollständig: '+e.message); }
+}
+
 function openVault() {
   const u=getUsername();
   document.getElementById('vault-title').textContent='🔐 '+(u==='default'?'Tresor':u);
@@ -458,7 +571,7 @@ function openVault() {
   loadFolders();
 }
 function lockVault() {
-  vaultCode=null; currentFolderId=null;
+  vaultCode=null; currentAuthToken=null; currentSalt=null; currentFolderId=null;
   document.getElementById('vault').classList.remove('open');
   calcRaw=''; updateDisplay();
 }
@@ -508,9 +621,7 @@ async function apiCall(body) {
   if (!parsed.ok) { const err = new Error(parsed.error || ('HTTP '+res.status)); err.code = parsed.error; throw err; }
   return parsed;
 }
-function apiLogin(username, pin) { return apiCall({ action:'login', username, pin }); }
-function apiRegister(username, pin) { return apiCall({ action:'register', username, pin }); }
-function api(action, payload={}) { return apiCall({ action, username:getUsername(), pin:vaultCode, ...payload }); }
+function api(action, payload={}) { return apiCall({ action, username:getUsername(), authToken:currentAuthToken, ...payload }); }
 
 // ══════════════════════════════════════
 // FOLDERS
@@ -678,7 +789,7 @@ async function uploadFile(file) {
     const {path}=await api('storage.upload', {filename:file.name, fileBase64:btoa(combinedBin)});
     fill.style.width='75%';
     const meta=await encrypt(JSON.stringify({name:file.name,desc,size:file.size,path}),vaultCode);
-    await api('docs.create', {data:meta, folder_id:currentFolderId});
+    await api('docs.create', {data:meta, folder_id:currentFolderId, storage_path:path});
     fill.style.width='100%';
     setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},600);
     showToast('✅ Hochgeladen');
@@ -773,7 +884,7 @@ async function copyToFolder(targetFolderId) {
       await api('passwords.create', {data:enc, folder_id:targetFolderId});
     } else {
       const meta=await encrypt(JSON.stringify({name:snapshot.name,desc:snapshot.desc,size:snapshot.size,path:snapshot.path}),vaultCode);
-      await api('docs.create', {data:meta, folder_id:targetFolderId});
+      await api('docs.create', {data:meta, folder_id:targetFolderId, storage_path:snapshot.path||null});
     }
     showToast('📁 Kopiert!');
   } catch(e) { showToast('❌ '+e.message); }
@@ -1094,10 +1205,18 @@ async function deleteUser(name) {
 // ══════════════════════════════════════
 const FP_KEY = 'tresor_fp_registered';
 
+// ── Biometrische Schnell-Entsperrung: der Code wird NUR noch mit einem
+//    Schlüssel "gewrapped", den die WebAuthn-PRF-Erweiterung liefert —
+//    der existiert ausschließlich NACH erfolgreicher Biometrie-Prüfung
+//    und steht nirgends im Quelltext. Unterstützt das Gerät/Browser
+//    PRF nicht, wird gar nichts lokal gespeichert (alte Variante mit
+//    fest codiertem Schlüssel bot nur Schein-Sicherheit und wurde
+//    ersatzlos entfernt — dann einfach den Code auf dem Rechner tippen). ──
 async function registerFingerprint(code) {
   if (!window.PublicKeyCredential) return;
   try {
     const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const prfSalt = crypto.getRandomValues(new Uint8Array(32));
     const cred = await navigator.credentials.create({
       publicKey: {
         challenge,
@@ -1105,17 +1224,23 @@ async function registerFingerprint(code) {
         user: { id: new TextEncoder().encode(getUsername()), name: getUsername(), displayName: getUsername() },
         pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        extensions: { prf: { eval: { first: prfSalt } } },
         timeout: 30000
       }
     });
-    if (cred) {
-      // store credential id and the vault code encrypted with a fixed key
-      const enc = await encrypt(code, 'fingerprint-binding-key-tresor');
-      localStorage.setItem(FP_KEY, JSON.stringify({
-        credId: btoa(String.fromCharCode(...new Uint8Array(cred.rawId))),
-        encCode: enc
-      }));
-    }
+    if (!cred) return;
+    const prfResult = cred.getClientExtensionResults?.().prf?.results?.first;
+    if (!prfResult) return; // Gerät/Browser unterstützt PRF nicht — Feature bleibt einfach aus
+    const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
+    const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const wrapped = await crypto.subtle.encrypt({name:'AES-GCM', iv}, wrapKey, new TextEncoder().encode(code));
+    const combined = new Uint8Array(12+wrapped.byteLength); combined.set(iv); combined.set(new Uint8Array(wrapped),12);
+    localStorage.setItem(FP_KEY, JSON.stringify({
+      credId: bytesToB64(new Uint8Array(cred.rawId)),
+      prfSalt: bytesToB64(prfSalt),
+      wrappedCode: bytesToB64(combined)
+    }));
   } catch(e) { /* user declined or not supported — silent */ }
 }
 
@@ -1124,25 +1249,27 @@ async function fingerprintLogin() {
   const stored = localStorage.getItem(FP_KEY);
   if (!stored) return;
   try {
-    const {credId, encCode} = JSON.parse(stored);
-    const credIdBytes = new Uint8Array(atob(credId).split('').map(c=>c.charCodeAt(0)));
+    const {credId, prfSalt, wrappedCode} = JSON.parse(stored);
+    const credIdBytes = b64ToBytes(credId);
     const challenge = crypto.getRandomValues(new Uint8Array(32));
     const assertion = await navigator.credentials.get({
       publicKey: {
         challenge,
         allowCredentials: [{ type: 'public-key', id: credIdBytes }],
         userVerification: 'required',
+        extensions: { prf: { eval: { first: b64ToBytes(prfSalt) } } },
         timeout: 30000
       }
     });
-    if (assertion) {
-      const code = await decrypt(encCode, 'fingerprint-binding-key-tresor');
-      await apiLogin(getUsername(), code); // still verify server-side, don't just trust local storage
-      vaultCode = code;
-      document.getElementById('calculator').classList.add('flash-ok');
-      setTimeout(()=>document.getElementById('calculator').classList.remove('flash-ok'), 400);
-      setTimeout(()=>openVault(), 300);
-    }
+    if (!assertion) return;
+    const prfResult = assertion.getClientExtensionResults?.().prf?.results?.first;
+    if (!prfResult) return; // ohne PRF-Ergebnis kann der Code nicht entwickelt werden
+    const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
+    const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['decrypt']);
+    const bytes = b64ToBytes(wrappedCode);
+    const dec = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, wrapKey, bytes.slice(12));
+    const code = new TextDecoder().decode(dec);
+    await tryUnlock(code); // geht durch denselben getSalt/login/migrate-Ablauf wie Tippen
   } catch(e) { /* wrong finger or cancelled — silent */ }
 }
 
