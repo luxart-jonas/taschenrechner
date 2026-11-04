@@ -636,6 +636,12 @@ async function changeVaultCode() {
 
     // Server umstellen — läuft noch mit dem alten authToken (currentAuthToken ist noch alt)
     await api('account.changeCode', { newSalt: newSaltB64, newAuthToken });
+    // WICHTIG: currentAuthToken/currentSalt SOFORT auf neu umstellen, denn
+    // der Server akzeptiert ab jetzt nur noch den neuen authToken — jeder
+    // api()-Aufruf danach (auch innerhalb der Neuverschlüsselung) würde
+    // sonst mit "unauthorized" scheitern und Einträge blieben unbemerkt
+    // im alten Schema stecken (genauso wie vaultCode selbst).
+    currentSalt = newSaltB64; currentAuthToken = newAuthToken; vaultCode = newRaw;
 
     // Hilfsfunktion: liest einen Eintrag egal ob neues oder altes Schema,
     // mit dem ALTEN Schlüssel (der Server-Salt ist ja schon umgestellt,
@@ -688,9 +694,6 @@ async function changeVaultCode() {
         await api('docs.update', {id: row.id, data: newMeta, storage_path: newPath});
       } catch(e) { failed++; }
     }
-
-    // ab jetzt gilt überall der neue Code
-    currentSalt = newSaltB64; currentAuthToken = newAuthToken; vaultCode = newRaw;
 
     // alte Fingerabdruck-Freischaltung war mit dem alten Code verknüpft —
     // verwerfen und mit dem neuen Code automatisch neu einrichten
