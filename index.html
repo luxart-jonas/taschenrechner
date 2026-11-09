@@ -16,8 +16,8 @@ const manifest = { name:'Rechner', short_name:'Rechner', start_url:window.locati
 const blob = new Blob([JSON.stringify(manifest)],{type:'application/json'});
 const manifestUrl = URL.createObjectURL(blob);
 document.addEventListener('DOMContentLoaded',()=>{
-  const l=document.createElement('link'); l.rel='manifest'; l.href=manifestUrl; document.head.appendChild(l);
-  const i=document.createElement('link'); i.rel='apple-touch-icon'; i.href=iconUrl; document.head.appendChild(i);
+const l=document.createElement('link'); l.rel='manifest'; l.href=manifestUrl; document.head.appendChild(l);
+const i=document.createElement('link'); i.rel='apple-touch-icon'; i.href=iconUrl; document.head.appendChild(i);
 });
 </script>
 <style>
@@ -33,14 +33,14 @@ body { background:#1a1a1a; display:flex; justify-content:center; align-items:cen
 .btn { border:none; border-radius:50%; width:66px; height:66px; font-size:22px; font-weight:400; transition:filter 0.1s,transform 0.08s; outline:none; user-select:none; cursor:pointer; }
 .btn:active { transform:scale(0.94); filter:brightness(1.2); }
 .btn-func { background:#3a3a3c; color:#f5f5f7; }
-.btn-op   { background:#ff9f0a; color:#fff; font-size:26px; }
-.btn-num  { background:#48484a; color:#f5f5f7; }
+.btn-op { background:#ff9f0a; color:#fff; font-size:26px; }
+.btn-num { background:#48484a; color:#f5f5f7; }
 .btn-zero { border-radius:34px; width:100%; grid-column:span 2; justify-self:stretch; text-align:left; padding-left:24px; }
-.btn-eq   { background:#ff9f0a; color:#fff; font-size:26px; }
+.btn-eq { background:#ff9f0a; color:#fff; font-size:26px; }
 @keyframes flash-green { 0%,100%{background:#2c2c2e} 50%{background:#1a3a2a} }
-@keyframes flash-red   { 0%,100%{background:#2c2c2e} 50%{background:#3a1a1a} }
-.flash-ok  { animation:flash-green 0.4s ease; }
-.flash-err { animation:flash-red   0.4s ease; }
+@keyframes flash-red { 0%,100%{background:#2c2c2e} 50%{background:#3a1a1a} }
+.flash-ok { animation:flash-green 0.4s ease; }
+.flash-err { animation:flash-red 0.4s ease; }
 
 /* OVERLAY */
 .overlay { display:none; position:fixed; inset:0; background:#0f0f10; flex-direction:column; overflow:hidden; }
@@ -123,164 +123,164 @@ textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
 
 <!-- SETUP BANNER -->
 <div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#ff9f0a;padding:14px 20px;flex-direction:column;align-items:center;gap:8px">
-  <div style="color:#fff;font-size:15px;font-weight:600">⚙️ Tresor einrichten</div>
-  <input id="setup-username" placeholder="Benutzername wählen…" autocomplete="off" autocorrect="off" autocapitalize="off"
-    style="width:100%;max-width:280px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:15px;outline:none;text-align:center">
-  <div style="color:rgba(255,255,255,0.9);font-size:13px">Dann Code im Rechner eingeben &amp; = drücken</div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 20px;color:#fff;font-size:20px;font-family:monospace;min-width:120px;text-align:center" id="setup-display">– – –</div>
-    <button onclick="closeSetup()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">✕</button>
-  </div>
-  <div style="color:rgba(255,255,255,0.8);font-size:12px" id="setup-status"></div>
+<div style="color:#fff;font-size:15px;font-weight:600">⚙️ Tresor einrichten</div>
+<input id="setup-username" placeholder="Benutzername wählen…" autocomplete="off" autocorrect="off" autocapitalize="off"
+style="width:100%;max-width:280px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:15px;outline:none;text-align:center">
+<div style="color:rgba(255,255,255,0.9);font-size:13px">Dann Code im Rechner eingeben &amp; = drücken</div>
+<div style="display:flex;gap:8px;align-items:center">
+<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px 20px;color:#fff;font-size:20px;font-family:monospace;min-width:120px;text-align:center" id="setup-display">– – –</div>
+<button onclick="closeSetup()" style="background:#fff;border:none;border-radius:8px;padding:6px 14px;color:#ff9f0a;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">✕</button>
+</div>
+<div style="color:rgba(255,255,255,0.8);font-size:12px" id="setup-status"></div>
 </div>
 
 <!-- CALCULATOR -->
 <div id="calculator">
-  <div id="display" onclick="fingerprintLogin()" style="cursor:pointer">
-    <div class="expr" id="expr"></div>
-    <div class="result" id="result">0</div>
-  </div>
-  <div class="btn-grid">
-    <button class="btn btn-func" onclick="calcFunc('AC')">AC</button>
-    <button class="btn btn-func" onclick="calcFunc('+/-')">+/−</button>
-    <button class="btn btn-func" onclick="calcFunc('%')">%</button>
-    <button class="btn btn-op"   onclick="calcOp('÷')">÷</button>
-    <button class="btn btn-num"  onclick="calcNum('7')">7</button>
-    <button class="btn btn-num"  onclick="calcNum('8')">8</button>
-    <button class="btn btn-num"  onclick="calcNum('9')">9</button>
-    <button class="btn btn-op"   onclick="calcOp('×')">×</button>
-    <button class="btn btn-num"  onclick="calcNum('4')">4</button>
-    <button class="btn btn-num"  onclick="calcNum('5')">5</button>
-    <button class="btn btn-num"  onclick="calcNum('6')">6</button>
-    <button class="btn btn-op"   onclick="calcOp('−')">−</button>
-    <button class="btn btn-num"  onclick="calcNum('1')">1</button>
-    <button class="btn btn-num"  onclick="calcNum('2')">2</button>
-    <button class="btn btn-num"  onclick="calcNum('3')">3</button>
-    <button class="btn btn-op"   onclick="calcOp('+')">+</button>
-    <button class="btn btn-num btn-zero" onclick="calcNum('0')">0</button>
-    <button class="btn btn-num"  onclick="calcNum('.')">.</button>
-    <button class="btn btn-eq"   onclick="calcEquals()">=</button>
-  </div>
+<div id="display" onclick="fingerprintLogin()" style="cursor:pointer">
+<div class="expr" id="expr"></div>
+<div class="result" id="result">0</div>
+</div>
+<div class="btn-grid">
+<button class="btn btn-func" onclick="calcFunc('AC')">AC</button>
+<button class="btn btn-func" onclick="calcFunc('+/-')">+/−</button>
+<button class="btn btn-func" onclick="calcFunc('%')">%</button>
+<button class="btn btn-op" onclick="calcOp('÷')">÷</button>
+<button class="btn btn-num" onclick="calcNum('7')">7</button>
+<button class="btn btn-num" onclick="calcNum('8')">8</button>
+<button class="btn btn-num" onclick="calcNum('9')">9</button>
+<button class="btn btn-op" onclick="calcOp('×')">×</button>
+<button class="btn btn-num" onclick="calcNum('4')">4</button>
+<button class="btn btn-num" onclick="calcNum('5')">5</button>
+<button class="btn btn-num" onclick="calcNum('6')">6</button>
+<button class="btn btn-op" onclick="calcOp('−')">−</button>
+<button class="btn btn-num" onclick="calcNum('1')">1</button>
+<button class="btn btn-num" onclick="calcNum('2')">2</button>
+<button class="btn btn-num" onclick="calcNum('3')">3</button>
+<button class="btn btn-op" onclick="calcOp('+')">+</button>
+<button class="btn btn-num btn-zero" onclick="calcNum('0')">0</button>
+<button class="btn btn-num" onclick="calcNum('.')">.</button>
+<button class="btn btn-eq" onclick="calcEquals()">=</button>
+</div>
 </div>
 
 <!-- VAULT -->
 <div class="overlay" id="vault">
-  <div class="overlay-header">
-    <button class="back-btn" id="back-btn" onclick="goBack()" style="display:none">◀ Zurück</button>
-    <div class="overlay-title" id="vault-title">🔐 Tresor</div>
-    <button class="lock-btn" onclick="openUsersPanel()" style="margin-right:6px">👤</button>
-    <button class="lock-btn" onclick="lockVault()">Sperren</button>
-  </div>
-  <div class="overlay-content">
-    <div class="vault-tabs" id="vault-tabs">
-      <button class="tab-btn active" onclick="switchTab('folders')">📁 Ordner</button>
-      <button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>
-    </div>
-    <div class="vault-content">
+<div class="overlay-header">
+<button class="back-btn" id="back-btn" onclick="goBack()" style="display:none">◀ Zurück</button>
+<div class="overlay-title" id="vault-title">🔐 Tresor</div>
+<button class="lock-btn" onclick="openUsersPanel()" style="margin-right:6px">👤</button>
+<button class="lock-btn" onclick="lockVault()">Sperren</button>
+</div>
+<div class="overlay-content">
+<div class="vault-tabs" id="vault-tabs">
+<button class="tab-btn active" onclick="switchTab('folders')">📁 Ordner</button>
+<button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>
+</div>
+<div class="vault-content">
 
-      <!-- FOLDERS TAB -->
-      <div class="tab-panel active" id="tab-folders">
-        <div class="add-form">
-          <div class="section-hdr">Neuer Ordner</div>
-          <div style="display:flex;gap:8px">
-            <input class="field-input" id="folder-name-input" placeholder="Ordnername…" style="flex:1" autocomplete="off">
-            <button class="add-btn" style="width:auto;padding:14px 20px" onclick="createFolder()">+</button>
-          </div>
-        </div>
-        <div class="section-hdr">Meine Ordner</div>
-        <div id="folder-list"><div class="empty-state">Noch keine Ordner</div></div>
-      </div>
+<!-- FOLDERS TAB -->
+<div class="tab-panel active" id="tab-folders">
+<div class="add-form">
+<div class="section-hdr">Neuer Ordner</div>
+<div style="display:flex;gap:8px">
+<input class="field-input" id="folder-name-input" placeholder="Ordnername…" style="flex:1" autocomplete="off">
+<button class="add-btn" style="width:auto;padding:14px 20px" onclick="createFolder()">+</button>
+</div>
+</div>
+<div class="section-hdr">Meine Ordner</div>
+<div id="folder-list"><div class="empty-state">Noch keine Ordner</div></div>
+</div>
 
-      <!-- FOLDER DETAIL (passwords + docs inside folder) -->
-      <div class="tab-panel" id="tab-folder-detail">
-        <div class="vault-tabs" style="margin:-16px -16px 16px;border-bottom:1px solid #2c2c2e;border-top:1px solid #2c2c2e">
-          <button class="tab-btn active" id="inner-pw-tab" onclick="switchInnerTab('passwords')">🔑 Passwörter</button>
-          <button class="tab-btn" id="inner-doc-tab" onclick="switchInnerTab('docs')">📄 Dokumente</button>
-        </div>
+<!-- FOLDER DETAIL (passwords + docs inside folder) -->
+<div class="tab-panel" id="tab-folder-detail">
+<div class="vault-tabs" style="margin:-16px -16px 16px;border-bottom:1px solid #2c2c2e;border-top:1px solid #2c2c2e">
+<button class="tab-btn active" id="inner-pw-tab" onclick="switchInnerTab('passwords')">🔑 Passwörter</button>
+<button class="tab-btn" id="inner-doc-tab" onclick="switchInnerTab('docs')">📄 Dokumente</button>
+</div>
 
-        <!-- inner passwords -->
-        <div id="inner-passwords">
-          <input class="field-input" id="pw-search" placeholder="🔍 Passwörter durchsuchen…" oninput="filterPasswords(this.value)" inputmode="search" style="margin-bottom:12px">
-          <div class="add-form">
-            <div class="section-hdr">Neues Passwort</div>
-            <div class="field-row">
-              <label class="field-label">Name / Website</label>
-              <input class="field-input" id="pw-name" placeholder="z.B. Google, Netflix…" inputmode="text" autocomplete="off">
-            </div>
-            <div class="field-row">
-              <label class="field-label">Benutzername / E-Mail</label>
-              <input class="field-input" id="pw-user" placeholder="user@example.com" inputmode="email" autocomplete="off">
-            </div>
-            <div class="field-row">
-              <label class="field-label">Passwort</label>
-              <input class="field-input" id="pw-pass" type="text" placeholder="Passwort eingeben" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-            </div>
-            <button class="add-btn" id="pw-save-btn" onclick="savePassword()">Speichern</button>
-          </div>
-          <div class="section-hdr">Gespeichert</div>
-          <div id="pw-list"><div class="empty-state">Noch keine Einträge</div></div>
-        </div>
+<!-- inner passwords -->
+<div id="inner-passwords">
+<input class="field-input" id="pw-search" placeholder="🔍 Passwörter durchsuchen…" oninput="filterPasswords(this.value)" inputmode="search" style="margin-bottom:12px">
+<div class="add-form">
+<div class="section-hdr">Neues Passwort</div>
+<div class="field-row">
+<label class="field-label">Name / Website</label>
+<input class="field-input" id="pw-name" placeholder="z.B. Google, Netflix…" inputmode="text" autocomplete="off">
+</div>
+<div class="field-row">
+<label class="field-label">Benutzername / E-Mail</label>
+<input class="field-input" id="pw-user" placeholder="user@example.com" inputmode="email" autocomplete="off">
+</div>
+<div class="field-row">
+<label class="field-label">Passwort</label>
+<input class="field-input" id="pw-pass" type="text" placeholder="Passwort eingeben" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+</div>
+<button class="add-btn" id="pw-save-btn" onclick="savePassword()">Speichern</button>
+</div>
+<div class="section-hdr">Gespeichert</div>
+<div id="pw-list"><div class="empty-state">Noch keine Einträge</div></div>
+</div>
 
-        <!-- inner docs -->
-        <div id="inner-docs" style="display:none">
-          <input class="field-input" id="doc-search" placeholder="🔍 Dokumente durchsuchen…" oninput="filterDocs(this.value)" inputmode="search" style="margin-bottom:12px">
-          <div class="add-form">
-            <div class="section-hdr">Dokument hochladen</div>
-            <div class="field-row">
-              <label class="field-label">Beschreibung</label>
-              <input class="field-input" id="doc-desc" placeholder="z.B. Debeka Versicherung…" inputmode="text" autocomplete="off">
-            </div>
-            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-              <div class="upload-icon">📎</div>
-              <div>Datei auswählen oder hierher ziehen</div>
-              <div class="progress-bar" id="upload-progress-bar" style="display:none">
-                <div class="progress-fill" id="upload-progress-fill"></div>
-              </div>
-            </div>
-            <input type="file" id="file-input" style="display:none" onchange="uploadFile(this.files[0])">
-          </div>
-          <div class="section-hdr">Gespeichert</div>
-          <div id="doc-list"><div class="empty-state">Noch keine Dokumente</div></div>
-        </div>
-      </div>
+<!-- inner docs -->
+<div id="inner-docs" style="display:none">
+<input class="field-input" id="doc-search" placeholder="🔍 Dokumente durchsuchen…" oninput="filterDocs(this.value)" inputmode="search" style="margin-bottom:12px">
+<div class="add-form">
+<div class="section-hdr">Dokument hochladen</div>
+<div class="field-row">
+<label class="field-label">Beschreibung</label>
+<input class="field-input" id="doc-desc" placeholder="z.B. Debeka Versicherung…" inputmode="text" autocomplete="off">
+</div>
+<div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+<div class="upload-icon">📎</div>
+<div>Datei auswählen oder hierher ziehen</div>
+<div class="progress-bar" id="upload-progress-bar" style="display:none">
+<div class="progress-fill" id="upload-progress-fill"></div>
+</div>
+</div>
+<input type="file" id="file-input" style="display:none" onchange="uploadFile(this.files[0])">
+</div>
+<div class="section-hdr">Gespeichert</div>
+<div id="doc-list"><div class="empty-state">Noch keine Dokumente</div></div>
+</div>
+</div>
 
-      <!-- SEARCH TAB -->
-      <div class="tab-panel" id="tab-search">
-        <input class="field-input" id="global-search" placeholder="🔍 Alles durchsuchen…" oninput="globalSearch(this.value)" inputmode="search" style="margin-bottom:16px">
-        <div id="global-results"><div class="empty-state">Suchbegriff eingeben…</div></div>
-      </div>
+<!-- SEARCH TAB -->
+<div class="tab-panel" id="tab-search">
+<input class="field-input" id="global-search" placeholder="🔍 Alles durchsuchen…" oninput="globalSearch(this.value)" inputmode="search" style="margin-bottom:16px">
+<div id="global-results"><div class="empty-state">Suchbegriff eingeben…</div></div>
+</div>
 
-    </div>
-  </div>
+</div>
+</div>
 </div>
 
 <!-- PREVIEW MODAL -->
 <div id="preview-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);flex-direction:column">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0">
-    <div id="preview-title" style="color:#f5f5f7;font-size:16px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-    <button onclick="closePreview()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation;margin-left:12px;flex-shrink:0">✕</button>
-  </div>
-  <div id="preview-content" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 16px 16px"></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0">
+<div id="preview-title" style="color:#f5f5f7;font-size:16px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+<button onclick="closePreview()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation;margin-left:12px;flex-shrink:0">✕</button>
+</div>
+<div id="preview-content" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 16px 16px"></div>
 </div>
 
 <!-- COPY MODAL -->
 <div id="copy-modal">
-  <div class="copy-sheet">
-    <div style="color:#f5f5f7;font-size:16px;font-weight:600;margin-bottom:16px">In welchen Ordner kopieren?</div>
-    <div id="copy-folder-list"></div>
-    <button onclick="closeCopyModal()" style="background:#3a3a3c;border:none;border-radius:8px;padding:12px;color:#6e6e73;font-size:14px;cursor:pointer;width:100%;margin-top:8px">Abbrechen</button>
-  </div>
+<div class="copy-sheet">
+<div style="color:#f5f5f7;font-size:16px;font-weight:600;margin-bottom:16px">In welchen Ordner kopieren?</div>
+<div id="copy-folder-list"></div>
+<button onclick="closeCopyModal()" style="background:#3a3a3c;border:none;border-radius:8px;padding:12px;color:#6e6e73;font-size:14px;cursor:pointer;width:100%;margin-top:8px">Abbrechen</button>
+</div>
 </div>
 
 <!-- USERS PANEL -->
 <div id="users-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.8);align-items:flex-end">
-  <div style="background:#2c2c2e;width:100%;border-radius:24px 24px 0 0;padding:20px;max-width:480px;margin:0 auto;max-height:80vh;overflow-y:auto">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="color:#f5f5f7;font-size:17px;font-weight:600">👤 Benutzer</div>
-      <button onclick="closeUsersPanel()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;cursor:pointer">✕</button>
-    </div>
-    <div id="users-list"><div class="empty-state">Lade…</div></div>
-  </div>
+<div style="background:#2c2c2e;width:100%;border-radius:24px 24px 0 0;padding:20px;max-width:480px;margin:0 auto;max-height:80vh;overflow-y:auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+<div style="color:#f5f5f7;font-size:17px;font-weight:600">👤 Benutzer</div>
+<button onclick="closeUsersPanel()" style="background:#3a3a3c;border:none;border-radius:8px;padding:8px 14px;color:#f5f5f7;font-size:14px;cursor:pointer">✕</button>
+</div>
+<div id="users-list"><div class="empty-state">Lade…</div></div>
+</div>
 </div>
 
 <div id="toast"></div>
@@ -289,13 +289,13 @@ textarea.field-input { resize:vertical; min-height:80px; font-family:inherit; }
 // ══════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════
-const SUPABASE_URL   = 'https://ormpszktwwiahjooukjk.supabase.co';
-const SUPABASE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ybXBzemt0d3dpYWhqb291a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzM5NTAsImV4cCI6MjA5NjQ0OTk1MH0.Jz4rKTlrvRbfdxS1e8fRkwXeD3CJsITeC6Q4lDBjfCc';
-const FUNCTIONS_URL  = SUPABASE_URL + '/functions/v1/tresor-api';
+const SUPABASE_URL = 'https://ormpszktwwiahjooukjk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ybXBzemt0d3dpYWhqb291a2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzM5NTAsImV4cCI6MjA5NjQ0OTk1MH0.Jz4rKTlrvRbfdxS1e8fRkwXeD3CJsITeC6Q4lDBjfCc';
+const FUNCTIONS_URL = SUPABASE_URL + '/functions/v1/tresor-api';
 const STORAGE_BUCKET = 'tresor-docs';
 const VAULT_CODE_KEY = 'tresor_vault_hash'; // legacy, unused since server-side PIN check was added
-const USERNAME_KEY   = 'tresor_username';
-const ADMIN_RAW      = '1+1';
+const USERNAME_KEY = 'tresor_username';
+const ADMIN_RAW = '1+1';
 
 function getUsername() { return localStorage.getItem(USERNAME_KEY) || 'default'; }
 
@@ -305,14 +305,14 @@ function getUsername() { return localStorage.getItem(USERNAME_KEY) || 'default';
 // Aufruf einmalig: diese Seite mit ?switchuser=jonas in der Adresse öffnen.
 // Ändert NUR den lokal gemerkten Namen, rührt keine Passwörter/Ordner an.
 (function () {
-  try {
-    const params = new URLSearchParams(location.search);
-    const su = params.get('switchuser');
-    if (su) {
-      localStorage.setItem(USERNAME_KEY, su);
-      alert('Lokaler Benutzername auf "' + su + '" gesetzt.\n\nJetzt mit dem PIN dieses Benutzers entsperren (normale Rechner-Eingabe, nicht ⚙️ Einrichten).');
-    }
-  } catch (e) {}
+try {
+const params = new URLSearchParams(location.search);
+const su = params.get('switchuser');
+if (su) {
+localStorage.setItem(USERNAME_KEY, su);
+alert('Lokaler Benutzername auf "' + su + '" gesetzt.\n\nJetzt mit dem PIN dieses Benutzers entsperren (normale Rechner-Eingabe, nicht ⚙️ Einrichten).');
+}
+} catch (e) {}
 })();
 
 // ══════════════════════════════════════
@@ -321,57 +321,57 @@ function getUsername() { return localStorage.getItem(USERNAME_KEY) || 'default';
 let calcRaw = '';
 
 function updateDisplay() {
-  const parts = calcRaw.split(/([+\-×÷*\/])/);
-  const last = parts[parts.length-1] || '0';
-  document.getElementById('result').textContent = last || '0';
-  document.getElementById('expr').textContent = calcRaw;
-  if (document.getElementById('setup-banner').style.display === 'flex')
-    document.getElementById('setup-display').textContent = calcRaw || '– – –';
+const parts = calcRaw.split(/([+\-×÷*\/])/);
+const last = parts[parts.length-1] || '0';
+document.getElementById('result').textContent = last || '0';
+document.getElementById('expr').textContent = calcRaw;
+if (document.getElementById('setup-banner').style.display === 'flex')
+document.getElementById('setup-display').textContent = calcRaw || '– – –';
 }
 
 function calcNum(n) {
-  if (n==='.' && calcRaw.match(/\.\d*$/)) return;
-  if (calcRaw==='0') calcRaw=n; else calcRaw+=n;
-  updateDisplay();
+if (n==='.' && calcRaw.match(/\.\d*$/)) return;
+if (calcRaw==='0') calcRaw=n; else calcRaw+=n;
+updateDisplay();
 }
 function calcOp(op) {
-  if (calcRaw==='' || /[+\-×÷]$/.test(calcRaw)) return;
-  calcRaw+=op; updateDisplay();
+if (calcRaw==='' || /[+\-×÷]$/.test(calcRaw)) return;
+calcRaw+=op; updateDisplay();
 }
 function calcFunc(f) {
-  if (f==='AC') { calcRaw=''; updateDisplay(); }
-  if (f==='%' && calcRaw && !/[+\-×÷%]$/.test(calcRaw)) { calcRaw+='%'; updateDisplay(); }
-  if (f==='+/-') {
-    const m=calcRaw.match(/^(.*[+\-×÷])(-?)(\d+\.?\d*)$/);
-    if (m) calcRaw=m[1]+(m[2]?'':'-')+m[3];
-    else if (calcRaw) calcRaw=calcRaw.startsWith('-')?calcRaw.slice(1):'-'+calcRaw;
-    updateDisplay();
-  }
+if (f==='AC') { calcRaw=''; updateDisplay(); }
+if (f==='%' && calcRaw && !/[+\-×÷%]$/.test(calcRaw)) { calcRaw+='%'; updateDisplay(); }
+if (f==='+/-') {
+const m=calcRaw.match(/^(.*[+\-×÷])(-?)(\d+\.?\d*)$/);
+if (m) calcRaw=m[1]+(m[2]?'':'-')+m[3];
+else if (calcRaw) calcRaw=calcRaw.startsWith('-')?calcRaw.slice(1):'-'+calcRaw;
+updateDisplay();
+}
 }
 
 async function calcEquals() {
-  const raw = calcRaw.trim();
-  if (!raw) return;
-  try {
-    const expr = raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'*0.01');
-    const result = Function('"use strict";return('+expr+')')();
-    document.getElementById('expr').textContent = raw+' =';
-    document.getElementById('result').textContent = isNaN(result)?'Fehler':String(+result.toFixed(10));
-  } catch(e) { document.getElementById('result').textContent='Fehler'; }
+const raw = calcRaw.trim();
+if (!raw) return;
+try {
+const expr = raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'*0.01');
+const result = Function('"use strict";return('+expr+')')();
+document.getElementById('expr').textContent = raw+' =';
+document.getElementById('result').textContent = isNaN(result)?'Fehler':String(+result.toFixed(10));
+} catch(e) { document.getElementById('result').textContent='Fehler'; }
 
-  if (document.getElementById('setup-banner').style.display==='flex') {
-    await registerVaultCode(raw); calcRaw=''; return;
-  }
-  if (raw===ADMIN_RAW) { calcRaw=''; openSetup(); return; }
-  await tryUnlock(raw); calcRaw='';
+if (document.getElementById('setup-banner').style.display==='flex') {
+await registerVaultCode(raw); calcRaw=''; return;
+}
+if (raw===ADMIN_RAW) { calcRaw=''; openSetup(); return; }
+await tryUnlock(raw); calcRaw='';
 }
 
 // ══════════════════════════════════════
 // CRYPTO
 // ══════════════════════════════════════
 async function sha256(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -380,11 +380,11 @@ async function sha256(text) {
 // Aus dem Tresor-Code werden zwei VOLLSTÄNDIG getrennte Werte per
 // PBKDF2 abgeleitet, mit unterschiedlichem "info"-Kontext, damit der
 // eine aus dem anderen nicht rekonstruierbar ist:
-//   - authToken: geht an den Server, nur zum Login-Nachweis. Der
-//                 Server speichert davon nur einen Hash und kann
-//                 daraus NIE den Verschlüsselungsschlüssel gewinnen.
-//   - encKey:    der echte AES-256-Schlüssel. Verlässt den Browser
-//                 NIE, wird NIE übertragen oder geloggt.
+// - authToken: geht an den Server, nur zum Login-Nachweis. Der
+// Server speichert davon nur einen Hash und kann
+// daraus NIE den Verschlüsselungsschlüssel gewinnen.
+// - encKey: der echte AES-256-Schlüssel. Verlässt den Browser
+// NIE, wird NIE übertragen oder geloggt.
 // currentSalt kommt vom Server (nicht geheim, nur Zufallswert) und
 // wird einmal pro Sitzung beim Entsperren gesetzt.
 // ══════════════════════════════════════════════════════════════════
@@ -395,106 +395,106 @@ function b64ToBytes(b64) { return Uint8Array.from(atob(b64), c=>c.charCodeAt(0))
 function bytesToB64(bytes) { let bin=''; for (const b of bytes) bin+=String.fromCharCode(b); return btoa(bin); }
 
 async function pbkdf2Bits(code, saltBytes, info, bitLen) {
-  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
-  const salt = new Uint8Array([...saltBytes, ...new TextEncoder().encode(info)]);
-  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, bitLen);
-  return new Uint8Array(bits);
+const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+const salt = new Uint8Array([...saltBytes, ...new TextEncoder().encode(info)]);
+const bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, bitLen);
+return new Uint8Array(bits);
 }
 async function deriveAuthToken(code, saltB64) {
-  const bits = await pbkdf2Bits(code, b64ToBytes(saltB64), 'tresor-auth-v1', 256);
-  return bytesToB64(bits);
+const bits = await pbkdf2Bits(code, b64ToBytes(saltB64), 'tresor-auth-v1', 256);
+return bytesToB64(bits);
 }
 async function deriveKeyWithSalt(code, saltB64) {
-  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
-  const salt = new Uint8Array([...b64ToBytes(saltB64), ...new TextEncoder().encode('tresor-enc-v1')]);
-  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+const salt = new Uint8Array([...b64ToBytes(saltB64), ...new TextEncoder().encode('tresor-enc-v1')]);
+return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:KDF_ITER, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
 }
 async function deriveKey(code) {
-  if (!currentSalt) throw new Error('Kein Salt geladen — bitte neu entsperren.');
-  return deriveKeyWithSalt(code, currentSalt);
+if (!currentSalt) throw new Error('Kein Salt geladen — bitte neu entsperren.');
+return deriveKeyWithSalt(code, currentSalt);
 }
 async function encryptWithKey(text, key) {
-  const iv=crypto.getRandomValues(new Uint8Array(12));
-  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
-  const out=new Uint8Array(12+enc.byteLength); out.set(iv); out.set(new Uint8Array(enc),12);
-  return btoa(String.fromCharCode(...out));
+const iv=crypto.getRandomValues(new Uint8Array(12));
+const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
+const out=new Uint8Array(12+enc.byteLength); out.set(iv); out.set(new Uint8Array(enc),12);
+return btoa(String.fromCharCode(...out));
 }
 async function decryptBytesWithKey(bytes, key) {
-  return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+return crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
 }
 
 // ── LEGACY (vor 2026-11): Schlüssel direkt aus dem gepaddeten Code,
-//    kein Salt, keine Streckung. Wird NUR noch für die einmalige
-//    Migration alter Einträge gebraucht, danach nie wieder benutzt. ──
+// kein Salt, keine Streckung. Wird NUR noch für die einmalige
+// Migration alter Einträge gebraucht, danach nie wieder benutzt. ──
 async function legacyDeriveKey(code) {
-  return crypto.subtle.importKey('raw', new TextEncoder().encode(code.padEnd(32,'0').slice(0,32)), 'AES-GCM', false, ['decrypt']);
+return crypto.subtle.importKey('raw', new TextEncoder().encode(code.padEnd(32,'0').slice(0,32)), 'AES-GCM', false, ['decrypt']);
 }
 async function legacyDecrypt(b64, code) {
-  const bytes=new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
-  const key=await legacyDeriveKey(code);
-  const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
-  return new TextDecoder().decode(dec);
+const bytes=new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
+const key=await legacyDeriveKey(code);
+const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+return new TextDecoder().decode(dec);
 }
 // ── Liest einen Eintrag egal ob schon neu oder noch alt verschlüsselt,
-//    damit beim Anzeigen NIE still etwas fehlt, auch wenn die
-//    Hintergrund-Migration (migrateReencryptAll) noch nicht bei diesem
-//    Eintrag angekommen ist. ──
+// damit beim Anzeigen NIE still etwas fehlt, auch wenn die
+// Hintergrund-Migration (migrateReencryptAll) noch nicht bei diesem
+// Eintrag angekommen ist. ──
 async function decryptAny(b64, code) {
-  try { return await decrypt(b64, code); }
-  catch(e) { return await legacyDecrypt(b64, code); }
+try { return await decrypt(b64, code); }
+catch(e) { return await legacyDecrypt(b64, code); }
 }
 
 async function encrypt(text, code) {
-  const key=await deriveKey(code), iv=crypto.getRandomValues(new Uint8Array(12));
-  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
-  const out=new Uint8Array(12+enc.byteLength); out.set(iv); out.set(new Uint8Array(enc),12);
-  return btoa(String.fromCharCode(...out));
+const key=await deriveKey(code), iv=crypto.getRandomValues(new Uint8Array(12));
+const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
+const out=new Uint8Array(12+enc.byteLength); out.set(iv); out.set(new Uint8Array(enc),12);
+return btoa(String.fromCharCode(...out));
 }
 async function decrypt(b64, code) {
-  const bytes=new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
-  const key=await deriveKey(code);
-  const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
-  return new TextDecoder().decode(dec);
+const bytes=new Uint8Array(atob(b64).split('').map(c=>c.charCodeAt(0)));
+const key=await deriveKey(code);
+const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+return new TextDecoder().decode(dec);
 }
 
 // ══════════════════════════════════════
 // SETUP
 // ══════════════════════════════════════
 function openSetup() {
-  calcRaw=''; updateDisplay();
-  document.getElementById('setup-display').textContent='– – –';
-  document.getElementById('setup-status').textContent='';
-  const existing=getUsername();
-  const inp=document.getElementById('setup-username');
-  inp.value=existing==='default'?'':existing;
-  inp.placeholder=existing==='default'?'Benutzername wählen…':'Benutzername ändern…';
-  document.getElementById('setup-banner').style.display='flex';
-  document.getElementById('calculator').style.marginTop='200px';
-  setTimeout(()=>inp.focus(),100);
+calcRaw=''; updateDisplay();
+document.getElementById('setup-display').textContent='– – –';
+document.getElementById('setup-status').textContent='';
+const existing=getUsername();
+const inp=document.getElementById('setup-username');
+inp.value=existing==='default'?'':existing;
+inp.placeholder=existing==='default'?'Benutzername wählen…':'Benutzername ändern…';
+document.getElementById('setup-banner').style.display='flex';
+document.getElementById('calculator').style.marginTop='200px';
+setTimeout(()=>inp.focus(),100);
 }
 function closeSetup() {
-  document.getElementById('setup-banner').style.display='none';
-  document.getElementById('calculator').style.marginTop='';
-  calcRaw=''; updateDisplay();
+document.getElementById('setup-banner').style.display='none';
+document.getElementById('calculator').style.marginTop='';
+calcRaw=''; updateDisplay();
 }
 async function registerVaultCode(raw) {
-  const username=document.getElementById('setup-username').value.trim();
-  if (!username) { document.getElementById('setup-status').textContent='❌ Bitte Benutzername eingeben!'; return; }
-  if (raw===ADMIN_RAW) { document.getElementById('setup-status').textContent='❌ Dieser Code ist reserviert.'; return; }
-  try {
-    const saltB64 = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
-    const authToken = await deriveAuthToken(raw, saltB64);
-    await apiCall({ action:'register', username, salt:saltB64, authToken });
-    currentSalt = saltB64; currentAuthToken = authToken;
-  } catch(e) {
-    if (e.code==='exists') document.getElementById('setup-status').textContent='❌ Dieser Benutzername ist schon eingerichtet. Erst mit dem bisherigen Code entsperren.';
-    else document.getElementById('setup-status').textContent='❌ '+e.message;
-    return;
-  }
-  localStorage.setItem(USERNAME_KEY, username);
-  document.getElementById('setup-status').textContent='✅ Gespeichert!';
-  showToast('✅ Willkommen, '+username+'!');
-  setTimeout(()=>{ closeSetup(); vaultCode=raw; openVault(); }, 800);
+const username=document.getElementById('setup-username').value.trim();
+if (!username) { document.getElementById('setup-status').textContent='❌ Bitte Benutzername eingeben!'; return; }
+if (raw===ADMIN_RAW) { document.getElementById('setup-status').textContent='❌ Dieser Code ist reserviert.'; return; }
+try {
+const saltB64 = bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+const authToken = await deriveAuthToken(raw, saltB64);
+await apiCall({ action:'register', username, salt:saltB64, authToken });
+currentSalt = saltB64; currentAuthToken = authToken;
+} catch(e) {
+if (e.code==='exists') document.getElementById('setup-status').textContent='❌ Dieser Benutzername ist schon eingerichtet. Erst mit dem bisherigen Code entsperren.';
+else document.getElementById('setup-status').textContent='❌ '+e.message;
+return;
+}
+localStorage.setItem(USERNAME_KEY, username);
+document.getElementById('setup-status').textContent='✅ Gespeichert!';
+showToast('✅ Willkommen, '+username+'!');
+setTimeout(()=>{ closeSetup(); vaultCode=raw; openVault(); }, 800);
 }
 
 // ══════════════════════════════════════
@@ -503,107 +503,124 @@ async function registerVaultCode(raw) {
 let vaultCode=null, currentFolderId=null, currentFolderName='';
 
 async function tryUnlock(raw) {
-  const calc=document.getElementById('calculator');
-  const username=getUsername();
-  try {
-    const salted = await apiCall({ action:'getSalt', username });
-    currentSalt = salted.salt;
-    const authToken = await deriveAuthToken(raw, currentSalt);
-    if (salted.migrated) {
-      await apiCall({ action:'login', username, authToken });
-    } else {
-      // Konto von vor dem Sicherheits-Update (Nov 2026): einmalig mit
-      // dem alten Code verifizieren, dann auf das neue Schema heben.
-      await apiCall({ action:'migrate', username, pin:raw, authToken });
-    }
-    vaultCode=raw; currentAuthToken=authToken;
-    calc.classList.add('flash-ok');
-    setTimeout(()=>calc.classList.remove('flash-ok'),400);
-    // register fingerprint if not yet done (or if an old-format entry is stuck there)
-    const fpStored = localStorage.getItem(FP_KEY);
-    if (!fpStored || !fpDataValid(fpStored)) {
-      if (fpStored) localStorage.removeItem(FP_KEY);
-      setTimeout(()=>registerFingerprint(raw), 500);
-    }
-    setTimeout(()=>openVault(),300);
-    // Umverschlüsselung läuft im Hintergrund weiter (blockiert die
-    // Ansicht nicht) und ist sicher wiederholbar: sie prüft jeden
-    // Eintrag selbst, ob er noch das alte Schema hat, und holt bei
-    // einer vorherigen abgebrochenen Sitzung (z.B. Tab geschlossen,
-    // während große Dateien noch hochgeladen wurden) automatisch nach.
-    migrateReencryptAll(raw);
-  } catch(e) {
-    calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400);
-    if (e.code==='not_found') showToast('Erst ⚙️ 1+1= eingeben, um den Code einzurichten');
-    else if (e.code==='locked') showToast('🔒 Zu viele Fehlversuche — kurz warten');
-  }
+const calc=document.getElementById('calculator');
+const username=getUsername();
+try {
+const salted = await apiCall({ action:'getSalt', username });
+currentSalt = salted.salt;
+const authToken = await deriveAuthToken(raw, currentSalt);
+if (salted.migrated) {
+await apiCall({ action:'login', username, authToken });
+} else {
+// Konto von vor dem Sicherheits-Update (Nov 2026): einmalig mit
+// dem alten Code verifizieren, dann auf das neue Schema heben.
+await apiCall({ action:'migrate', username, pin:raw, authToken });
+}
+vaultCode=raw; currentAuthToken=authToken;
+calc.classList.add('flash-ok');
+setTimeout(()=>calc.classList.remove('flash-ok'),400);
+// register fingerprint if not yet done (or if an old-format entry is stuck there)
+const fpStored = localStorage.getItem(FP_KEY);
+if (!fpStored || !fpDataValid(fpStored)) {
+if (fpStored) localStorage.removeItem(FP_KEY);
+setTimeout(()=>registerFingerprint(raw), 500);
+}
+setTimeout(()=>openVault(),300);
+// Umverschlüsselung läuft im Hintergrund weiter (blockiert die
+// Ansicht nicht) und ist sicher wiederholbar: sie prüft jeden
+// Eintrag selbst, ob er noch das alte Schema hat, und holt bei
+// einer vorherigen abgebrochenen Sitzung (z.B. Tab geschlossen,
+// während große Dateien noch hochgeladen wurden) automatisch nach.
+migrateReencryptAll(raw);
+} catch(e) {
+calc.classList.add('flash-err'); setTimeout(()=>calc.classList.remove('flash-err'),400);
+if (e.code==='not_found') showToast('Erst ⚙️ 1+1= eingeben, um den Code einzurichten');
+else if (e.code==='locked') showToast('🔒 Zu viele Fehlversuche — kurz warten');
+}
 }
 
 // ── Wiederholbare Migration: prüft bei JEDEM Entsperren erneut, ob
-//    noch Einträge (Ordner, Passwörter, Dokumente samt Dateien) mit
-//    dem alten, ungesalzenen Schema verschlüsselt sind, und zieht nur
-//    die fehlenden nach — nicht nur einmalig beim allerersten Login.
-//    Das macht es robust gegen eine abgebrochene vorherige Sitzung
-//    (z.B. Tab geschlossen/Verbindung weg während große Dateien noch
-//    hochgeladen wurden: nur die bis dahin geschafften Einträge waren
-//    sonst migriert, der Rest blieb unsichtbar auf dem alten Schema
-//    stehen). Läuft im Hintergrund, blockiert die Vault-Ansicht nicht;
-//    alte Dateien im Storage werden dabei NICHT gelöscht (bleiben als
-//    zusätzliches Backup liegen). ──
+// noch Einträge (Ordner, Passwörter, Dokumente samt Dateien) mit
+// dem alten, ungesalzenen Schema verschlüsselt sind, und zieht nur
+// die fehlenden nach — nicht nur einmalig beim allerersten Login.
+// Das macht es robust gegen eine abgebrochene vorherige Sitzung
+// (z.B. Tab geschlossen/Verbindung weg während große Dateien noch
+// hochgeladen wurden: nur die bis dahin geschafften Einträge waren
+// sonst migriert, der Rest blieb unsichtbar auf dem alten Schema
+// stehen). Läuft im Hintergrund, blockiert die Vault-Ansicht nicht;
+// alte Dateien im Storage werden dabei NICHT gelöscht (bleiben als
+// zusätzliches Backup liegen). ──
 async function migrateReencryptAll(pin) {
-  let didWork=false, failed=0;
-  try {
-    const folderRows=(await api('folders.list')).rows;
-    for (const row of folderRows) {
-      try { await decrypt(row.data,pin); continue; } catch(e) {} // schon neu — überspringen
-      try {
-        const plain=await legacyDecrypt(row.data,pin);
-        await api('folders.update', {id:row.id, data: await encrypt(plain,pin)});
-        didWork=true;
-      } catch(e) { failed++; }
-    }
-    const pwRows=(await api('passwords.listAll')).rows;
-    for (const row of pwRows) {
-      try { await decrypt(row.data,pin); continue; } catch(e) {}
-      try {
-        const plain=await legacyDecrypt(row.data,pin);
-        await api('passwords.update', {id:row.id, data: await encrypt(plain,pin)});
-        didWork=true;
-      } catch(e) { failed++; }
-    }
-    const docRows=(await api('docs.listAll')).rows;
-    let docsTodo=0;
-    for (const row of docRows) { try { await decrypt(row.data,pin); } catch(e) { docsTodo++; } }
-    if (docsTodo) showToast(`🔄 Sicherheits-Update: ${docsTodo} Dokument(e) werden nachgezogen…`);
-    for (const row of docRows) {
-      try { await decrypt(row.data,pin); continue; } catch(e) {} // schon neu — überspringen
-      try {
-        const plain=await legacyDecrypt(row.data,pin);
-        const obj=JSON.parse(plain);
-        let newPath=obj.path||null;
-        if (obj.path) {
-          try {
-            const {dataBase64}=await api('storage.download', {path:obj.path});
-            const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
-            const legacyKey=await legacyDeriveKey(pin);
-            const plainFile=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, legacyKey, bytes.slice(12));
-            const newKey=await deriveKey(pin), iv2=crypto.getRandomValues(new Uint8Array(12));
-            const reencFile=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv2}, newKey, plainFile);
-            const combined=new Uint8Array(12+reencFile.byteLength); combined.set(iv2); combined.set(new Uint8Array(reencFile),12);
-            const up=await api('storage.upload', {filename:obj.name||'file', fileBase64: bytesToB64(combined)});
-            newPath=up.path;
-          } catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem migrieren, alter Pfad bleibt als Fallback */ }
-        }
-        const newMeta=await encrypt(JSON.stringify({...obj, path:newPath}), pin);
-        await api('docs.update', {id:row.id, data:newMeta, storage_path:newPath});
-        didWork=true;
-      } catch(e) { failed++; }
-    }
-    if (didWork) {
-      showToast(failed ? `✅ Sicherheits-Update: Rest nachgezogen (${failed} übersprungen)` : '✅ Sicherheits-Update abgeschlossen');
-      if (document.getElementById('vault').classList.contains('open')) { loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); } }
-    }
-  } catch(e) { /* nichts geschafft diese Sitzung — beim nächsten Entsperren wird's automatisch erneut versucht */ }
+let didWork=false, failed=0;
+try {
+const folderRows=(await api('folders.list')).rows;
+for (const row of folderRows) {
+try { await decrypt(row.data,pin); continue; } catch(e) {} // schon neu — überspringen
+try {
+const plain=await legacyDecrypt(row.data,pin);
+await api('folders.update', {id:row.id, data: await encrypt(plain,pin)});
+didWork=true;
+} catch(e) { console.error('[Tresor] Migration fehlgeschlagen für Ordner '+row.id+':', e); failed++; }
+}
+const pwRows=(await api('passwords.listAll')).rows;
+for (const row of pwRows) {
+try { await decrypt(row.data,pin); continue; } catch(e) {}
+try {
+const plain=await legacyDecrypt(row.data,pin);
+await api('passwords.update', {id:row.id, data: await encrypt(plain,pin)});
+didWork=true;
+} catch(e) { console.error('[Tresor] Migration fehlgeschlagen für Passwort '+row.id+':', e); failed++; }
+}
+const docRows=(await api('docs.listAll')).rows;
+let docsTodo=0;
+for (const row of docRows) { try { await decrypt(row.data,pin); } catch(e) { docsTodo++; } }
+if (docsTodo) showToast(`🔄 Sicherheits-Update: ${docsTodo} Dokument(e) werden nachgezogen…`);
+for (const row of docRows) {
+try { await decrypt(row.data,pin); continue; } catch(e) {} // schon neu — überspringen
+try {
+const plain=await legacyDecrypt(row.data,pin);
+const obj=JSON.parse(plain);
+// WICHTIG: row.storage_path (die aktuelle, autoritative Spalte in der
+// Datenbank) verwenden, NICHT obj.path (der in den verschlüsselten
+// Metadaten EINGEBETTETE Pfad). Die beiden können auseinanderlaufen,
+// z.B. wenn eine frühere Migration die Datei schon mal verschoben hat
+// aber dabei abgebrochen ist — dann zeigt obj.path auf eine Datei, die
+// gar nicht mehr existiert, der Download schlägt fehl, und FRÜHER wurde
+// trotzdem stillschweigend mit kaputten/falschen Metadaten weitergemacht.
+// Das war die Ursache dafür, dass Dokumente irreparabel unleserlich
+// wurden, obwohl der Code stimmte (siehe Vorfall Nov 2026).
+const sourcePath = row.storage_path || obj.path || null;
+let newPath = sourcePath;
+if (sourcePath) {
+try {
+const {dataBase64}=await api('storage.download', {path:sourcePath});
+const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
+const legacyKey=await legacyDeriveKey(pin);
+const plainFile=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)}, legacyKey, bytes.slice(12));
+const newKey=await deriveKey(pin), iv2=crypto.getRandomValues(new Uint8Array(12));
+const reencFile=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv2}, newKey, plainFile);
+const combined=new Uint8Array(12+reencFile.byteLength); combined.set(iv2); combined.set(new Uint8Array(reencFile),12);
+const up=await api('storage.upload', {filename:obj.name||'file', fileBase64: bytesToB64(combined)});
+newPath=up.path;
+} catch(e) {
+// Datei fehlt/kaputt: die Metadaten NICHT anrühren. Lieber beim alten
+// (noch funktionierenden) Schema bleiben, als mit einem falschen/fehlenden
+// Pfad zu überschreiben und den Eintrag damit dauerhaft zu zerstören.
+console.error('[Tresor] Migration: Datei für Dokument '+row.id+' (Pfad: '+sourcePath+') konnte nicht gelesen werden — Eintrag wird NICHT verändert:', e);
+failed++;
+continue;
+}
+}
+const newMeta=await encrypt(JSON.stringify({...obj, path:newPath}), pin);
+await api('docs.update', {id:row.id, data:newMeta, storage_path:newPath});
+didWork=true;
+} catch(e) { console.error('[Tresor] Migration fehlgeschlagen für Dokument '+row.id+':', e); failed++; }
+}
+if (didWork) {
+showToast(failed ? `✅ Sicherheits-Update: Rest nachgezogen (${failed} übersprungen)` : '✅ Sicherheits-Update abgeschlossen');
+if (document.getElementById('vault').classList.contains('open')) { loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); } }
+}
+} catch(e) { /* nichts geschafft diese Sitzung — beim nächsten Entsperren wird's automatisch erneut versucht */ }
 }
 
 // ══════════════════════════════════════
@@ -615,139 +632,139 @@ async function migrateReencryptAll(pin) {
 // Code neu verschlüsselt. Läuft alles clientseitig — der Server sieht
 // weder alten noch neuen Code, nur die beiden abgeleiteten authToken.
 async function changeVaultCode() {
-  if (!vaultCode || !currentSalt) { showToast('❌ Bitte erst entsperren'); return; }
-  const oldRaw = window.prompt('Zur Bestätigung: aktuellen Code eingeben');
-  if (oldRaw === null) return;
-  if (oldRaw !== vaultCode) { showToast('❌ Aktueller Code stimmt nicht'); return; }
-  const newRaw = window.prompt('Neuen Code eingeben:');
-  if (newRaw === null || !newRaw) return;
-  if (newRaw === ADMIN_RAW) { showToast('❌ Dieser Code ist reserviert'); return; }
-  const newRaw2 = window.prompt('Neuen Code zur Bestätigung erneut eingeben:');
-  if (newRaw2 !== newRaw) { showToast('❌ Codes stimmten nicht überein — nichts geändert'); return; }
+if (!vaultCode || !currentSalt) { showToast('❌ Bitte erst entsperren'); return; }
+const oldRaw = window.prompt('Zur Bestätigung: aktuellen Code eingeben');
+if (oldRaw === null) return;
+if (oldRaw !== vaultCode) { showToast('❌ Aktueller Code stimmt nicht'); return; }
+const newRaw = window.prompt('Neuen Code eingeben:');
+if (newRaw === null || !newRaw) return;
+if (newRaw === ADMIN_RAW) { showToast('❌ Dieser Code ist reserviert'); return; }
+const newRaw2 = window.prompt('Neuen Code zur Bestätigung erneut eingeben:');
+if (newRaw2 !== newRaw) { showToast('❌ Codes stimmten nicht überein — nichts geändert'); return; }
 
-  showToast('🔄 Code wird geändert, bitte warten…');
-  const oldRawSaved = vaultCode, oldSaltSaved = currentSalt;
-  try {
-    const oldKey = await deriveKeyWithSalt(oldRawSaved, oldSaltSaved);
-    const newSaltBytes = crypto.getRandomValues(new Uint8Array(16));
-    const newSaltB64 = bytesToB64(newSaltBytes);
-    const newAuthToken = await deriveAuthToken(newRaw, newSaltB64);
-    const newKey = await deriveKeyWithSalt(newRaw, newSaltB64);
+showToast('🔄 Code wird geändert, bitte warten…');
+const oldRawSaved = vaultCode, oldSaltSaved = currentSalt;
+try {
+const oldKey = await deriveKeyWithSalt(oldRawSaved, oldSaltSaved);
+const newSaltBytes = crypto.getRandomValues(new Uint8Array(16));
+const newSaltB64 = bytesToB64(newSaltBytes);
+const newAuthToken = await deriveAuthToken(newRaw, newSaltB64);
+const newKey = await deriveKeyWithSalt(newRaw, newSaltB64);
 
-    // Server umstellen — läuft noch mit dem alten authToken (currentAuthToken ist noch alt)
-    await api('account.changeCode', { newSalt: newSaltB64, newAuthToken });
-    // WICHTIG: currentAuthToken/currentSalt SOFORT auf neu umstellen, denn
-    // der Server akzeptiert ab jetzt nur noch den neuen authToken — jeder
-    // api()-Aufruf danach (auch innerhalb der Neuverschlüsselung) würde
-    // sonst mit "unauthorized" scheitern und Einträge blieben unbemerkt
-    // im alten Schema stecken (genauso wie vaultCode selbst).
-    currentSalt = newSaltB64; currentAuthToken = newAuthToken; vaultCode = newRaw;
+// Server umstellen — läuft noch mit dem alten authToken (currentAuthToken ist noch alt)
+await api('account.changeCode', { newSalt: newSaltB64, newAuthToken });
+// WICHTIG: currentAuthToken/currentSalt SOFORT auf neu umstellen, denn
+// der Server akzeptiert ab jetzt nur noch den neuen authToken — jeder
+// api()-Aufruf danach (auch innerhalb der Neuverschlüsselung) würde
+// sonst mit "unauthorized" scheitern und Einträge blieben unbemerkt
+// im alten Schema stecken (genauso wie vaultCode selbst).
+currentSalt = newSaltB64; currentAuthToken = newAuthToken; vaultCode = newRaw;
 
-    // Hilfsfunktion: liest einen Eintrag egal ob neues oder altes Schema,
-    // mit dem ALTEN Schlüssel (der Server-Salt ist ja schon umgestellt,
-    // aber lokal brauchen wir für die Entschlüsselung noch den alten).
-    async function readOld(b64) {
-      try {
-        const bytes = b64ToBytes(b64);
-        const dec = await decryptBytesWithKey(bytes, oldKey);
-        return new TextDecoder().decode(dec);
-      } catch(e) { return await legacyDecrypt(b64, oldRawSaved); }
-    }
-    async function writeNew(text) { return encryptWithKey(text, newKey); }
+// Hilfsfunktion: liest einen Eintrag egal ob neues oder altes Schema,
+// mit dem ALTEN Schlüssel (der Server-Salt ist ja schon umgestellt,
+// aber lokal brauchen wir für die Entschlüsselung noch den alten).
+async function readOld(b64) {
+try {
+const bytes = b64ToBytes(b64);
+const dec = await decryptBytesWithKey(bytes, oldKey);
+return new TextDecoder().decode(dec);
+} catch(e) { return await legacyDecrypt(b64, oldRawSaved); }
+}
+async function writeNew(text) { return encryptWithKey(text, newKey); }
 
-    let failed = 0;
-    const folderRows = (await api('folders.list')).rows;
-    for (const row of folderRows) {
-      try { await api('folders.update', { id: row.id, data: await writeNew(await readOld(row.data)) }); }
-      catch(e) { failed++; }
-    }
-    const pwRows = (await api('passwords.listAll')).rows;
-    for (const row of pwRows) {
-      try { await api('passwords.update', { id: row.id, data: await writeNew(await readOld(row.data)) }); }
-      catch(e) { failed++; }
-    }
-    const docRows = (await api('docs.listAll')).rows;
-    for (const row of docRows) {
-      try {
-        const plain = await readOld(row.data);
-        const obj = JSON.parse(plain);
-        let newPath = obj.path || null;
-        if (obj.path) {
-          try {
-            const {dataBase64} = await api('storage.download', {path: obj.path});
-            const bytes = b64ToBytes(dataBase64);
-            let fileBytes;
-            try { fileBytes = await decryptBytesWithKey(bytes, oldKey); }
-            catch(e) {
-              const legacyKey = await legacyDeriveKey(oldRawSaved);
-              fileBytes = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, legacyKey, bytes.slice(12));
-            }
-            const iv2 = crypto.getRandomValues(new Uint8Array(12));
-            const reenc = await crypto.subtle.encrypt({name:'AES-GCM', iv:iv2}, newKey, fileBytes);
-            const combined = new Uint8Array(12+reenc.byteLength); combined.set(iv2); combined.set(new Uint8Array(reenc),12);
-            const up = await api('storage.upload', {filename: obj.name||'file', fileBase64: bytesToB64(combined)});
-            newPath = up.path;
-            await api('storage.delete', {path: obj.path}).catch(()=>{});
-          } catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem umstellen, Pfad bleibt wie er war */ }
-        }
-        const newMeta = await writeNew(JSON.stringify({...obj, path:newPath}));
-        await api('docs.update', {id: row.id, data: newMeta, storage_path: newPath});
-      } catch(e) { failed++; }
-    }
+let failed = 0;
+const folderRows = (await api('folders.list')).rows;
+for (const row of folderRows) {
+try { await api('folders.update', { id: row.id, data: await writeNew(await readOld(row.data)) }); }
+catch(e) { failed++; }
+}
+const pwRows = (await api('passwords.listAll')).rows;
+for (const row of pwRows) {
+try { await api('passwords.update', { id: row.id, data: await writeNew(await readOld(row.data)) }); }
+catch(e) { failed++; }
+}
+const docRows = (await api('docs.listAll')).rows;
+for (const row of docRows) {
+try {
+const plain = await readOld(row.data);
+const obj = JSON.parse(plain);
+let newPath = obj.path || null;
+if (obj.path) {
+try {
+const {dataBase64} = await api('storage.download', {path: obj.path});
+const bytes = b64ToBytes(dataBase64);
+let fileBytes;
+try { fileBytes = await decryptBytesWithKey(bytes, oldKey); }
+catch(e) {
+const legacyKey = await legacyDeriveKey(oldRawSaved);
+fileBytes = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, legacyKey, bytes.slice(12));
+}
+const iv2 = crypto.getRandomValues(new Uint8Array(12));
+const reenc = await crypto.subtle.encrypt({name:'AES-GCM', iv:iv2}, newKey, fileBytes);
+const combined = new Uint8Array(12+reenc.byteLength); combined.set(iv2); combined.set(new Uint8Array(reenc),12);
+const up = await api('storage.upload', {filename: obj.name||'file', fileBase64: bytesToB64(combined)});
+newPath = up.path;
+await api('storage.delete', {path: obj.path}).catch(()=>{});
+} catch(e) { /* Datei fehlt/kaputt — Metadaten trotzdem umstellen, Pfad bleibt wie er war */ }
+}
+const newMeta = await writeNew(JSON.stringify({...obj, path:newPath}));
+await api('docs.update', {id: row.id, data: newMeta, storage_path: newPath});
+} catch(e) { failed++; }
+}
 
-    // alte Fingerabdruck-Freischaltung war mit dem alten Code verknüpft —
-    // verwerfen und mit dem neuen Code automatisch neu einrichten
-    const hadFp = fpDataValid(localStorage.getItem(FP_KEY));
-    if (hadFp) { localStorage.removeItem(FP_KEY); setTimeout(()=>registerFingerprint(newRaw), 500); }
+// alte Fingerabdruck-Freischaltung war mit dem alten Code verknüpft —
+// verwerfen und mit dem neuen Code automatisch neu einrichten
+const hadFp = fpDataValid(localStorage.getItem(FP_KEY));
+if (hadFp) { localStorage.removeItem(FP_KEY); setTimeout(()=>registerFingerprint(newRaw), 500); }
 
-    showToast(failed ? `✅ Code geändert (${failed} Einträge übersprungen — bitte prüfen)` : '✅ Code erfolgreich geändert');
-    loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); }
-  } catch(e) {
-    showToast('❌ Fehler beim Ändern: ' + (e && e.message ? e.message : 'unbekannt'));
-  }
+showToast(failed ? `✅ Code geändert (${failed} Einträge übersprungen — bitte prüfen)` : '✅ Code erfolgreich geändert');
+loadFolders(); if (currentFolderId) { loadPasswords(); loadDocs(); }
+} catch(e) {
+showToast('❌ Fehler beim Ändern: ' + (e && e.message ? e.message : 'unbekannt'));
+}
 }
 
 function openVault() {
-  const u=getUsername();
-  document.getElementById('vault-title').textContent='🔐 '+(u==='default'?'Tresor':u);
-  document.getElementById('vault').classList.add('open');
-  switchTab('folders');
-  loadFolders();
+const u=getUsername();
+document.getElementById('vault-title').textContent='🔐 '+(u==='default'?'Tresor':u);
+document.getElementById('vault').classList.add('open');
+switchTab('folders');
+loadFolders();
 }
 function lockVault() {
-  vaultCode=null; currentAuthToken=null; currentSalt=null; currentFolderId=null;
-  document.getElementById('vault').classList.remove('open');
-  calcRaw=''; updateDisplay();
+vaultCode=null; currentAuthToken=null; currentSalt=null; currentFolderId=null;
+document.getElementById('vault').classList.remove('open');
+calcRaw=''; updateDisplay();
 }
 
 function goBack() {
-  currentFolderId=null; currentFolderName='';
-  document.getElementById('back-btn').style.display='none';
-  document.getElementById('vault-title').textContent='🔐 '+(getUsername()==='default'?'Tresor':getUsername());
-  // show folder tabs again
-  const tabs=document.getElementById('vault-tabs');
-  tabs.innerHTML=`<button class="tab-btn active" onclick="switchTab('folders')">📁 Ordner</button><button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>`;
-  switchTab('folders');
-  loadFolders();
+currentFolderId=null; currentFolderName='';
+document.getElementById('back-btn').style.display='none';
+document.getElementById('vault-title').textContent='🔐 '+(getUsername()==='default'?'Tresor':getUsername());
+// show folder tabs again
+const tabs=document.getElementById('vault-tabs');
+tabs.innerHTML=`<button class="tab-btn active" onclick="switchTab('folders')">📁 Ordner</button><button class="tab-btn" onclick="switchTab('search')">🔍 Suchen</button>`;
+switchTab('folders');
+loadFolders();
 }
 
 function switchTab(name) {
-  document.querySelectorAll('#vault-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  const panel=document.getElementById('tab-'+name);
-  if (panel) panel.classList.add('active');
-  // highlight active tab btn
-  document.querySelectorAll('#vault-tabs .tab-btn').forEach(b=>{
-    if (b.textContent.toLowerCase().includes(name==='folders'?'ordner':name==='search'?'such':'ordner')) b.classList.add('active');
-  });
-  if (name==='search') { document.getElementById('global-results').innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; setTimeout(()=>document.getElementById('global-search').focus(),100); }
+document.querySelectorAll('#vault-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+const panel=document.getElementById('tab-'+name);
+if (panel) panel.classList.add('active');
+// highlight active tab btn
+document.querySelectorAll('#vault-tabs .tab-btn').forEach(b=>{
+if (b.textContent.toLowerCase().includes(name==='folders'?'ordner':name==='search'?'such':'ordner')) b.classList.add('active');
+});
+if (name==='search') { document.getElementById('global-results').innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; setTimeout(()=>document.getElementById('global-search').focus(),100); }
 }
 
 function switchInnerTab(name) {
-  document.getElementById('inner-pw-tab').classList.toggle('active', name==='passwords');
-  document.getElementById('inner-doc-tab').classList.toggle('active', name==='docs');
-  document.getElementById('inner-passwords').style.display=name==='passwords'?'block':'none';
-  document.getElementById('inner-docs').style.display=name==='docs'?'block':'none';
+document.getElementById('inner-pw-tab').classList.toggle('active', name==='passwords');
+document.getElementById('inner-doc-tab').classList.toggle('active', name==='docs');
+document.getElementById('inner-passwords').style.display=name==='passwords'?'block':'none';
+document.getElementById('inner-docs').style.display=name==='docs'?'block':'none';
 }
 
 // ══════════════════════════════════════
@@ -755,15 +772,15 @@ function switchInnerTab(name) {
 // the tables/storage themselves are locked down and unreachable directly)
 // ══════════════════════════════════════
 async function apiCall(body) {
-  const res = await fetch(FUNCTIONS_URL, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  let parsed;
-  try { parsed = await res.json(); } catch { parsed = { ok:false, error:'bad_response' }; }
-  if (!parsed.ok) { const err = new Error(parsed.error || ('HTTP '+res.status)); err.code = parsed.error; throw err; }
-  return parsed;
+const res = await fetch(FUNCTIONS_URL, {
+method: 'POST',
+headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+body: JSON.stringify(body)
+});
+let parsed;
+try { parsed = await res.json(); } catch { parsed = { ok:false, error:'bad_response' }; }
+if (!parsed.ok) { const err = new Error(parsed.error || ('HTTP '+res.status)); err.code = parsed.error; throw err; }
+return parsed;
 }
 function api(action, payload={}) { return apiCall({ action, username:getUsername(), authToken:currentAuthToken, ...payload }); }
 
@@ -773,83 +790,97 @@ function api(action, payload={}) { return apiCall({ action, username:getUsername
 let allFolders=[];
 
 async function createFolder() {
-  const nameVal=document.getElementById('folder-name-input').value.trim();
-  if (!nameVal) { showToast('Bitte Ordnernamen eingeben'); return; }
-  try {
-    const enc=await encrypt(JSON.stringify({name:nameVal}), vaultCode);
-    await api('folders.create', {data:enc});
-    document.getElementById('folder-name-input').value='';
-    showToast('📁 Ordner erstellt'); loadFolders();
-  } catch(e) { showToast('❌ '+e.message); }
+const nameVal=document.getElementById('folder-name-input').value.trim();
+if (!nameVal) { showToast('Bitte Ordnernamen eingeben'); return; }
+try {
+const enc=await encrypt(JSON.stringify({name:nameVal}), vaultCode);
+await api('folders.create', {data:enc});
+document.getElementById('folder-name-input').value='';
+showToast('📁 Ordner erstellt'); loadFolders();
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 async function loadFolders() {
-  try {
-    const rows=(await api('folders.list')).rows;
-    allFolders=[];
-    for (const row of rows) {
-      try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allFolders.push({id:row.id,...obj}); } catch {}
-    }
-    // ensure "Mein Leben" exists
-    if (!allFolders.length) { await ensureDefaultFolder(); return; }
-    renderFolders();
-  } catch(e) { showToast('Ladefehler: '+e.message); }
+try {
+const rows=(await api('folders.list')).rows;
+allFolders=[];
+let decryptFailures=0;
+for (const row of rows) {
+try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allFolders.push({id:row.id,...obj}); }
+catch(e) { decryptFailures++; console.error('[Tresor] Ordner '+row.id+' konnte nicht entschlüsselt werden:', e); }
+}
+// "Mein Leben" nur anlegen, wenn es WIRKLICH noch keine Ordner in der
+// Datenbank gibt (rows.length===0). Gab es dagegen Zeilen, die aber
+// ALLE nicht entschlüsselt werden konnten, ist das ein Fehlerzustand
+// (falscher Code oder beschädigte Daten) — kein leerer Tresor. Das
+// früher stillschweigende Anlegen eines neuen leeren Ordners in diesem
+// Fall hätte genau das kaschiert, was im Nov-2026-Vorfall passiert ist:
+// echte Daten waren vorhanden, aber nicht lesbar, und niemand hat es
+// gemerkt, weil die App einfach "keine Ordner" gezeigt hat.
+if (!rows.length) { await ensureDefaultFolder(); return; }
+if (!allFolders.length && decryptFailures>0) {
+showToast('⚠️ '+decryptFailures+' Ordner nicht entschlüsselbar — falscher Code oder beschädigte Daten?');
+document.getElementById('folder-list').innerHTML='<div class="empty-state">⚠️ Entschlüsselung fehlgeschlagen (siehe Konsole) — KEIN neuer Ordner wird angelegt</div>';
+return;
+}
+renderFolders();
+} catch(e) { showToast('Ladefehler: '+e.message); }
 }
 
 async function ensureDefaultFolder() {
-  try {
-    const enc=await encrypt(JSON.stringify({name:'Mein Leben'}),vaultCode);
-    await api('folders.create', {data:enc});
-    loadFolders();
-  } catch(e) {}
+try {
+const enc=await encrypt(JSON.stringify({name:'Mein Leben'}),vaultCode);
+await api('folders.create', {data:enc});
+loadFolders();
+} catch(e) {}
 }
 
 async function renderFolders() {
-  const list=document.getElementById('folder-list');
-  if (!allFolders.length) { list.innerHTML='<div class="empty-state">Noch keine Ordner</div>'; return; }
-  list.innerHTML='';
-  for (const f of allFolders) {
-    // count items
-    let pwCount=0, docCount=0;
-    try {
-      const pws=(await api('passwords.list', {folder_id:f.id})).rows;
-      const docs=(await api('docs.list', {folder_id:f.id})).rows;
-      pwCount=pws.length; docCount=docs.length;
-    } catch {}
-    const card=document.createElement('div');
-    card.className='folder-card';
-    card.innerHTML=`
-      <div class="folder-icon">📁</div>
-      <div class="folder-info" onclick="openFolder('${f.id}','${escHtml(f.name)}')">
-        <div class="folder-name">${escHtml(f.name)}</div>
-        <div class="folder-meta">${pwCount} Passwörter · ${docCount} Dokumente</div>
-      </div>
-      <div class="folder-actions">
-        <button class="icon-btn danger" onclick="deleteFolder('${f.id}')" title="Löschen">🗑</button>
-      </div>`;
-    list.appendChild(card);
-  }
+const list=document.getElementById('folder-list');
+if (!allFolders.length) { list.innerHTML='<div class="empty-state">Noch keine Ordner</div>'; return; }
+list.innerHTML='';
+for (const f of allFolders) {
+// count items
+let pwCount=0, docCount=0;
+try {
+const pws=(await api('passwords.list', {folder_id:f.id})).rows;
+const docs=(await api('docs.list', {folder_id:f.id})).rows;
+pwCount=pws.length; docCount=docs.length;
+} catch {}
+const card=document.createElement('div');
+card.className='folder-card';
+card.innerHTML=`
+<div class="folder-icon">📁</div>
+<div class="folder-info" onclick="openFolder('${f.id}','${escHtml(f.name)}')">
+<div class="folder-name">${escHtml(f.name)}</div>
+<div class="folder-meta">${pwCount} Passwörter · ${docCount} Dokumente</div>
+</div>
+<div class="folder-actions">
+<button class="icon-btn danger" onclick="deleteFolder('${f.id}')" title="Löschen">🗑</button>
+</div>`;
+list.appendChild(card);
+}
 }
 
 async function deleteFolder(id) {
-  if (!confirm('Ordner und alle Inhalte löschen?')) return;
-  try {
-    await api('folders.delete', {id}); // server cascades passwords/docs/storage
-    showToast('🗑 Ordner gelöscht'); loadFolders();
-  } catch(e) { showToast('❌ '+e.message); }
+if (!confirm('Ordner und alle Inhalte löschen?')) return;
+try {
+await api('folders.delete', {id}); // server cascades passwords/docs/storage
+showToast('🗑 Ordner gelöscht'); loadFolders();
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 function openFolder(id, name) {
-  currentFolderId=id; currentFolderName=name;
-  document.getElementById('vault-title').textContent='📁 '+name;
-  document.getElementById('back-btn').style.display='flex';
-  // replace tabs with folder-detail
-  const tabs=document.getElementById('vault-tabs');
-  tabs.innerHTML=''; // hide top tabs when inside folder
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-folder-detail').classList.add('active');
-  switchInnerTab('passwords');
-  loadPasswords(); loadDocs();
+currentFolderId=id; currentFolderName=name;
+document.getElementById('vault-title').textContent='📁 '+name;
+document.getElementById('back-btn').style.display='flex';
+// replace tabs with folder-detail
+const tabs=document.getElementById('vault-tabs');
+tabs.innerHTML=''; // hide top tabs when inside folder
+document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+document.getElementById('tab-folder-detail').classList.add('active');
+switchInnerTab('passwords');
+loadPasswords(); loadDocs();
 }
 
 // ══════════════════════════════════════
@@ -858,59 +889,62 @@ function openFolder(id, name) {
 let allPasswords=[];
 
 async function savePassword() {
-  const name=document.getElementById('pw-name').value.trim();
-  const user=document.getElementById('pw-user').value.trim();
-  const pass=document.getElementById('pw-pass').value;
-  if (!name||!pass) { showToast('Name und Passwort sind Pflichtfelder'); return; }
-  const btn=document.getElementById('pw-save-btn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Speichern…';
-  try {
-    const enc=await encrypt(JSON.stringify({name,user,pass}),vaultCode);
-    await api('passwords.create', {data:enc, folder_id:currentFolderId});
-    document.getElementById('pw-name').value='';
-    document.getElementById('pw-user').value='';
-    document.getElementById('pw-pass').value='';
-    showToast('✅ Gespeichert'); loadPasswords();
-  } catch(e) { showToast('❌ '+e.message); }
-  finally { btn.disabled=false; btn.textContent='Speichern'; }
+const name=document.getElementById('pw-name').value.trim();
+const user=document.getElementById('pw-user').value.trim();
+const pass=document.getElementById('pw-pass').value;
+if (!name||!pass) { showToast('Name und Passwort sind Pflichtfelder'); return; }
+const btn=document.getElementById('pw-save-btn');
+btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Speichern…';
+try {
+const enc=await encrypt(JSON.stringify({name,user,pass}),vaultCode);
+await api('passwords.create', {data:enc, folder_id:currentFolderId});
+document.getElementById('pw-name').value='';
+document.getElementById('pw-user').value='';
+document.getElementById('pw-pass').value='';
+showToast('✅ Gespeichert'); loadPasswords();
+} catch(e) { showToast('❌ '+e.message); }
+finally { btn.disabled=false; btn.textContent='Speichern'; }
 }
 
 async function loadPasswords() {
-  try {
-    const rows=(await api('passwords.list', {folder_id:currentFolderId})).rows;
-    allPasswords=[];
-    for (const row of rows) {
-      try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allPasswords.push({id:row.id,...obj}); } catch {}
-    }
-    renderPasswords(allPasswords);
-  } catch(e) { showToast('Ladefehler: '+e.message); }
+try {
+const rows=(await api('passwords.list', {folder_id:currentFolderId})).rows;
+allPasswords=[];
+let failures=0;
+for (const row of rows) {
+try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allPasswords.push({id:row.id,...obj}); }
+catch(e) { failures++; console.error('[Tresor] Passwort '+row.id+' konnte nicht entschlüsselt werden:', e); }
+}
+if (failures) showToast('⚠️ '+failures+' Passwort(e) konnten nicht angezeigt werden (siehe Konsole)');
+renderPasswords(allPasswords);
+} catch(e) { showToast('Ladefehler: '+e.message); }
 }
 
 function renderPasswords(items) {
-  const list=document.getElementById('pw-list');
-  if (!items.length) { list.innerHTML='<div class="empty-state">Noch keine Einträge</div>'; return; }
-  list.innerHTML='';
-  for (const obj of items) {
-    const card=document.createElement('div'); card.className='card';
-    card.innerHTML=`
-      <div class="card-actions">
-        <button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
-        <button class="icon-btn" onclick="openCopyModal('password','${obj.id}')" title="In Ordner kopieren">📁</button>
-        <button class="icon-btn danger" onclick="deleteEntry('passwords','${obj.id}')">🗑</button>
-      </div>
-      <div class="card-label">Name</div>
-      <div class="card-value" style="margin-bottom:8px">${escHtml(obj.name)}</div>
-      ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:8px">${escHtml(obj.user)}</div>`:''}
-      <div class="card-label">Passwort</div>
-      <div class="card-value" style="font-family:monospace">${escHtml(obj.pass)}</div>`;
-    list.appendChild(card);
-  }
+const list=document.getElementById('pw-list');
+if (!items.length) { list.innerHTML='<div class="empty-state">Noch keine Einträge</div>'; return; }
+list.innerHTML='';
+for (const obj of items) {
+const card=document.createElement('div'); card.className='card';
+card.innerHTML=`
+<div class="card-actions">
+<button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')">📋</button>
+<button class="icon-btn" onclick="openCopyModal('password','${obj.id}')" title="In Ordner kopieren">📁</button>
+<button class="icon-btn danger" onclick="deleteEntry('passwords','${obj.id}')">🗑</button>
+</div>
+<div class="card-label">Name</div>
+<div class="card-value" style="margin-bottom:8px">${escHtml(obj.name)}</div>
+${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:8px">${escHtml(obj.user)}</div>`:''}
+<div class="card-label">Passwort</div>
+<div class="card-value" style="font-family:monospace">${escHtml(obj.pass)}</div>`;
+list.appendChild(card);
+}
 }
 
 function filterPasswords(q) {
-  q=q.toLowerCase();
-  if (!q) { renderPasswords(allPasswords); return; }
-  renderPasswords(allPasswords.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q))));
+q=q.toLowerCase();
+if (!q) { renderPasswords(allPasswords); return; }
+renderPasswords(allPasswords.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q))));
 }
 
 // ══════════════════════════════════════
@@ -919,68 +953,71 @@ function filterPasswords(q) {
 let allDocs=[];
 
 async function uploadFile(file) {
-  if (!file) return;
-  const desc=document.getElementById('doc-desc').value.trim();
-  const bar=document.getElementById('upload-progress-bar'), fill=document.getElementById('upload-progress-fill');
-  bar.style.display='block'; fill.style.width='10%';
-  showToast('⏫ Wird hochgeladen…');
-  try {
-    const key=await deriveKey(vaultCode), iv=crypto.getRandomValues(new Uint8Array(12));
-    const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,await file.arrayBuffer());
-    const combined=new Uint8Array(12+enc.byteLength); combined.set(iv); combined.set(new Uint8Array(enc),12);
-    fill.style.width='40%';
-    let combinedBin=''; for (const b of combined) combinedBin+=String.fromCharCode(b);
-    const {path}=await api('storage.upload', {filename:file.name, fileBase64:btoa(combinedBin)});
-    fill.style.width='75%';
-    const meta=await encrypt(JSON.stringify({name:file.name,desc,size:file.size,path}),vaultCode);
-    await api('docs.create', {data:meta, folder_id:currentFolderId, storage_path:path});
-    fill.style.width='100%';
-    setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},600);
-    showToast('✅ Hochgeladen');
-    document.getElementById('file-input').value='';
-    document.getElementById('doc-desc').value='';
-    loadDocs();
-  } catch(e) { bar.style.display='none'; showToast('❌ '+e.message); }
+if (!file) return;
+const desc=document.getElementById('doc-desc').value.trim();
+const bar=document.getElementById('upload-progress-bar'), fill=document.getElementById('upload-progress-fill');
+bar.style.display='block'; fill.style.width='10%';
+showToast('⏫ Wird hochgeladen…');
+try {
+const key=await deriveKey(vaultCode), iv=crypto.getRandomValues(new Uint8Array(12));
+const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,await file.arrayBuffer());
+const combined=new Uint8Array(12+enc.byteLength); combined.set(iv); combined.set(new Uint8Array(enc),12);
+fill.style.width='40%';
+let combinedBin=''; for (const b of combined) combinedBin+=String.fromCharCode(b);
+const {path}=await api('storage.upload', {filename:file.name, fileBase64:btoa(combinedBin)});
+fill.style.width='75%';
+const meta=await encrypt(JSON.stringify({name:file.name,desc,size:file.size,path}),vaultCode);
+await api('docs.create', {data:meta, folder_id:currentFolderId, storage_path:path});
+fill.style.width='100%';
+setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},600);
+showToast('✅ Hochgeladen');
+document.getElementById('file-input').value='';
+document.getElementById('doc-desc').value='';
+loadDocs();
+} catch(e) { bar.style.display='none'; showToast('❌ '+e.message); }
 }
 
 async function loadDocs() {
-  try {
-    const rows=(await api('docs.list', {folder_id:currentFolderId})).rows;
-    allDocs=[];
-    for (const row of rows) {
-      try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allDocs.push({id:row.id,...obj}); } catch {}
-    }
-    renderDocs(allDocs);
-  } catch(e) { showToast('Ladefehler: '+e.message); }
+try {
+const rows=(await api('docs.list', {folder_id:currentFolderId})).rows;
+allDocs=[];
+let failures=0;
+for (const row of rows) {
+try { const obj=JSON.parse(await decryptAny(row.data,vaultCode)); allDocs.push({id:row.id,...obj}); }
+catch(e) { failures++; console.error('[Tresor] Dokument '+row.id+' konnte nicht entschlüsselt werden:', e); }
+}
+if (failures) showToast('⚠️ '+failures+' Dokument(e) konnten nicht angezeigt werden (siehe Konsole)');
+renderDocs(allDocs);
+} catch(e) { showToast('Ladefehler: '+e.message); }
 }
 
 function renderDocs(docs, container) {
-  const list=container||document.getElementById('doc-list');
-  if (!docs.length) { list.innerHTML='<div class="empty-state">Noch keine Dokumente</div>'; return; }
-  list.innerHTML='';
-  for (const obj of docs) {
-    const ext=obj.name.split('.').pop().toLowerCase();
-    const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3','docx'].includes(ext);
-    const card=document.createElement('div'); card.className='doc-card'; card.style.flexWrap='wrap'; card.style.gap='10px';
-    card.innerHTML=`
-      <div class="doc-info" style="cursor:${previewable?'pointer':'default'};width:100%" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
-        <div class="doc-name">${previewable?'👁 ':'📄 '}${escHtml(obj.desc||obj.name)}</div>
-        <div class="doc-meta">${obj.desc?escHtml(obj.name)+' · ':''}${formatSize(obj.size)}</div>
-      </div>
-      <div style="display:flex;gap:12px;width:100%;justify-content:flex-end">
-        <button class="icon-btn" onclick="openCopyModal('doc','${obj.id}')" title="Kopieren" style="width:44px;height:44px;font-size:18px">📁</button>
-        <button class="icon-btn" onclick="shareDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" title="Teilen" style="width:44px;height:44px;font-size:18px">📤</button>
-        <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" style="width:44px;height:44px;font-size:18px">⬇️</button>
-        <button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}')" style="width:44px;height:44px;font-size:18px">🗑</button>
-      </div>`;
-    list.appendChild(card);
-  }
+const list=container||document.getElementById('doc-list');
+if (!docs.length) { list.innerHTML='<div class="empty-state">Noch keine Dokumente</div>'; return; }
+list.innerHTML='';
+for (const obj of docs) {
+const ext=obj.name.split('.').pop().toLowerCase();
+const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3','docx'].includes(ext);
+const card=document.createElement('div'); card.className='doc-card'; card.style.flexWrap='wrap'; card.style.gap='10px';
+card.innerHTML=`
+<div class="doc-info" style="cursor:${previewable?'pointer':'default'};width:100%" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
+<div class="doc-name">${previewable?'👁 ':'📄 '}${escHtml(obj.desc||obj.name)}</div>
+<div class="doc-meta">${obj.desc?escHtml(obj.name)+' · ':''}${formatSize(obj.size)}</div>
+</div>
+<div style="display:flex;gap:12px;width:100%;justify-content:flex-end">
+<button class="icon-btn" onclick="openCopyModal('doc','${obj.id}')" title="Kopieren" style="width:44px;height:44px;font-size:18px">📁</button>
+<button class="icon-btn" onclick="shareDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" title="Teilen" style="width:44px;height:44px;font-size:18px">📤</button>
+<button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')" style="width:44px;height:44px;font-size:18px">⬇️</button>
+<button class="icon-btn danger" onclick="deleteEntry('docs','${obj.id}')" style="width:44px;height:44px;font-size:18px">🗑</button>
+</div>`;
+list.appendChild(card);
+}
 }
 
 function filterDocs(q) {
-  q=q.toLowerCase();
-  if (!q) { renderDocs(allDocs); return; }
-  renderDocs(allDocs.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q))));
+q=q.toLowerCase();
+if (!q) { renderDocs(allDocs); return; }
+renderDocs(allDocs.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q))));
 }
 
 // ══════════════════════════════════════
@@ -989,299 +1026,299 @@ function filterDocs(q) {
 let copyTarget=null;
 
 async function openCopyModal(type, id) {
-  // save a snapshot of the data NOW before modal opens
-  const snapshot = type==='password'
-    ? allPasswords.find(p=>p.id===id)
-    : allDocs.find(d=>d.id===id);
-  if (!snapshot) { showToast('❌ Eintrag nicht gefunden'); return; }
-  copyTarget={type, id, snapshot};
-  const list=document.getElementById('copy-folder-list');
-  list.innerHTML='';
-  if (!allFolders.length) await loadFolders();
-  const others = allFolders.filter(f=>f.id!==currentFolderId);
-  if (!others.length) {
-    list.innerHTML='<div class="empty-state">Keine anderen Ordner vorhanden</div>';
-  } else {
-    for (const f of others) {
-      const btn=document.createElement('button');
-      btn.className='copy-folder-btn';
-      btn.innerHTML=`📁 ${escHtml(f.name)}`;
-      btn.onclick=()=>copyToFolder(f.id);
-      list.appendChild(btn);
-    }
-  }
-  document.getElementById('copy-modal').classList.add('open');
+// save a snapshot of the data NOW before modal opens
+const snapshot = type==='password'
+? allPasswords.find(p=>p.id===id)
+: allDocs.find(d=>d.id===id);
+if (!snapshot) { showToast('❌ Eintrag nicht gefunden'); return; }
+copyTarget={type, id, snapshot};
+const list=document.getElementById('copy-folder-list');
+list.innerHTML='';
+if (!allFolders.length) await loadFolders();
+const others = allFolders.filter(f=>f.id!==currentFolderId);
+if (!others.length) {
+list.innerHTML='<div class="empty-state">Keine anderen Ordner vorhanden</div>';
+} else {
+for (const f of others) {
+const btn=document.createElement('button');
+btn.className='copy-folder-btn';
+btn.innerHTML=`📁 ${escHtml(f.name)}`;
+btn.onclick=()=>copyToFolder(f.id);
+list.appendChild(btn);
+}
+}
+document.getElementById('copy-modal').classList.add('open');
 }
 
 function closeCopyModal() {
-  document.getElementById('copy-modal').classList.remove('open');
-  copyTarget=null;
+document.getElementById('copy-modal').classList.remove('open');
+copyTarget=null;
 }
 
 async function copyToFolder(targetFolderId) {
-  if (!copyTarget) return;
-  const {type, snapshot} = copyTarget;
-  closeCopyModal();
-  try {
-    if (type==='password') {
-      const enc=await encrypt(JSON.stringify({name:snapshot.name,user:snapshot.user,pass:snapshot.pass}),vaultCode);
-      await api('passwords.create', {data:enc, folder_id:targetFolderId});
-    } else {
-      const meta=await encrypt(JSON.stringify({name:snapshot.name,desc:snapshot.desc,size:snapshot.size,path:snapshot.path}),vaultCode);
-      await api('docs.create', {data:meta, folder_id:targetFolderId, storage_path:snapshot.path||null});
-    }
-    showToast('📁 Kopiert!');
-  } catch(e) { showToast('❌ '+e.message); }
+if (!copyTarget) return;
+const {type, snapshot} = copyTarget;
+closeCopyModal();
+try {
+if (type==='password') {
+const enc=await encrypt(JSON.stringify({name:snapshot.name,user:snapshot.user,pass:snapshot.pass}),vaultCode);
+await api('passwords.create', {data:enc, folder_id:targetFolderId});
+} else {
+const meta=await encrypt(JSON.stringify({name:snapshot.name,desc:snapshot.desc,size:snapshot.size,path:snapshot.path}),vaultCode);
+await api('docs.create', {data:meta, folder_id:targetFolderId, storage_path:snapshot.path||null});
+}
+showToast('📁 Kopiert!');
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 // ══════════════════════════════════════
 // PREVIEW & DOWNLOAD & SHARE
 // ══════════════════════════════════════
 async function decryptFile(path) {
-  const {dataBase64}=await api('storage.download', {path});
-  const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
-  try {
-    const key=await deriveKey(vaultCode);
-    return await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
-  } catch(e) {
-    const legacyKey=await legacyDeriveKey(vaultCode); // Datei noch nicht migriert
-    return await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},legacyKey,bytes.slice(12));
-  }
+const {dataBase64}=await api('storage.download', {path});
+const bytes=Uint8Array.from(atob(dataBase64), c=>c.charCodeAt(0));
+try {
+const key=await deriveKey(vaultCode);
+return await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+} catch(e) {
+const legacyKey=await legacyDeriveKey(vaultCode); // Datei noch nicht migriert
+return await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},legacyKey,bytes.slice(12));
+}
 }
 
 // ── ZOOM HELPER ──
 function setupZoom(wrapper, target, isImage) {
-  let scale=1, tx=0, ty=0;
-  let startDist=0, startScale=1, startTx=0, startTy=0;
-  let startMidX=0, startMidY=0;
-  let dragStartX=0, dragStartY=0, dragging=false;
+let scale=1, tx=0, ty=0;
+let startDist=0, startScale=1, startTx=0, startTy=0;
+let startMidX=0, startMidY=0;
+let dragStartX=0, dragStartY=0, dragging=false;
 
-  function apply() {
-    target.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
-    target.style.transformOrigin=isImage?'center center':'top center';
-  }
+function apply() {
+target.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+target.style.transformOrigin=isImage?'center center':'top center';
+}
 
-  wrapper.addEventListener('touchstart',e=>{
-    if(e.touches.length===2){
-      e.preventDefault();
-      startDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-      startScale=scale; startTx=tx; startTy=ty;
-      startMidX=(e.touches[0].clientX+e.touches[1].clientX)/2;
-      startMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
-    } else if(e.touches.length===1 && scale>1) {
-      dragging=true;
-      dragStartX=e.touches[0].clientX-tx;
-      dragStartY=e.touches[0].clientY-ty;
-    }
-  },{passive:false});
+wrapper.addEventListener('touchstart',e=>{
+if(e.touches.length===2){
+e.preventDefault();
+startDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+startScale=scale; startTx=tx; startTy=ty;
+startMidX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+startMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+} else if(e.touches.length===1 && scale>1) {
+dragging=true;
+dragStartX=e.touches[0].clientX-tx;
+dragStartY=e.touches[0].clientY-ty;
+}
+},{passive:false});
 
-  wrapper.addEventListener('touchmove',e=>{
-    e.preventDefault();
-    if(e.touches.length===2){
-      const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-      const ratio=dist/startDist;
-      scale=Math.min(Math.max(startScale*ratio,1),6);
-      // pan toward pinch midpoint
-      const midX=(e.touches[0].clientX+e.touches[1].clientX)/2;
-      const midY=(e.touches[0].clientY+e.touches[1].clientY)/2;
-      tx=startTx+(midX-startMidX);
-      ty=startTy+(midY-startMidY);
-      apply();
-    } else if(e.touches.length===1 && dragging && scale>1){
-      tx=e.touches[0].clientX-dragStartX;
-      ty=e.touches[0].clientY-dragStartY;
-      apply();
-    }
-  },{passive:false});
+wrapper.addEventListener('touchmove',e=>{
+e.preventDefault();
+if(e.touches.length===2){
+const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+const ratio=dist/startDist;
+scale=Math.min(Math.max(startScale*ratio,1),6);
+// pan toward pinch midpoint
+const midX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+const midY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+tx=startTx+(midX-startMidX);
+ty=startTy+(midY-startMidY);
+apply();
+} else if(e.touches.length===1 && dragging && scale>1){
+tx=e.touches[0].clientX-dragStartX;
+ty=e.touches[0].clientY-dragStartY;
+apply();
+}
+},{passive:false});
 
-  wrapper.addEventListener('touchend',e=>{
-    if(e.touches.length<2) dragging=false;
-    if(scale<=1){ scale=1; tx=0; ty=0; apply(); }
-  },{passive:true});
+wrapper.addEventListener('touchend',e=>{
+if(e.touches.length<2) dragging=false;
+if(scale<=1){ scale=1; tx=0; ty=0; apply(); }
+},{passive:true});
 
-  wrapper.addEventListener('dblclick',()=>{
-    if(scale>1){ scale=1; tx=0; ty=0; }
-    else { scale=2.5; }
-    apply();
-  });
+wrapper.addEventListener('dblclick',()=>{
+if(scale>1){ scale=1; tx=0; ty=0; }
+else { scale=2.5; }
+apply();
+});
 }
 
 async function previewDoc(path, name) {
-  showToast('⏳ Wird geladen…');
-  try {
-    const dec=await decryptFile(path);
-    const ext=name.split('.').pop().toLowerCase();
-    const mimeMap={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml',pdf:'application/pdf',html:'text/html',htm:'text/html',txt:'text/plain',mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg'};
-    const mime=mimeMap[ext]||'application/octet-stream';
-    document.getElementById('preview-title').textContent=name;
-    const content=document.getElementById('preview-content');
-    content.innerHTML=''; content.style.overflow='auto';
+showToast('⏳ Wird geladen…');
+try {
+const dec=await decryptFile(path);
+const ext=name.split('.').pop().toLowerCase();
+const mimeMap={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml',pdf:'application/pdf',html:'text/html',htm:'text/html',txt:'text/plain',mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg'};
+const mime=mimeMap[ext]||'application/octet-stream';
+document.getElementById('preview-title').textContent=name;
+const content=document.getElementById('preview-content');
+content.innerHTML=''; content.style.overflow='auto';
 
-    if (mime.startsWith('image/')) {
-      const url=URL.createObjectURL(new Blob([dec],{type:mime}));
-      content.style.overflow='hidden'; content.style.padding='0';
-      content.innerHTML=`<div id="zoom-wrap" style="width:100%;height:100%;overflow:hidden;position:relative;touch-action:none"><img id="zoom-img" src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;transform-origin:0 0"></div>`;
-      setupZoom(document.getElementById('zoom-wrap'), document.getElementById('zoom-img'), true);
-    }
-    else if (ext==='pdf') {
-      content.style.overflow='auto'; content.style.padding='8px';
-      content.innerHTML='<div style="color:#6e6e73;text-align:center;padding:20px"><span class="spinner"></span> PDF wird geladen…</div>';
-      const pdfData=new Uint8Array(dec);
-      const loadPdfJs=()=>new Promise((res,rej)=>{
-        if(window.pdfjsLib){res();return;}
-        const s=document.createElement('script');
-        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res();};
-        s.onerror=rej; document.head.appendChild(s);
-      });
-      await loadPdfJs();
-      const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;
-      content.innerHTML='<div id="pdf-pages" style="width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;touch-action:none"></div>';
-      const container=document.getElementById('pdf-pages');
-      for(let i=1;i<=pdfDoc.numPages;i++){
-        const page=await pdfDoc.getPage(i);
-        const devicePixelRatio=window.devicePixelRatio||2;
-        const baseScale=window.innerWidth/page.getViewport({scale:1}).width*0.95;
-        const vp=page.getViewport({scale:baseScale*devicePixelRatio});
-        const canvas=document.createElement('canvas');
-        canvas.width=vp.width; canvas.height=vp.height;
-        canvas.style.cssText=`width:${vp.width/devicePixelRatio}px;max-width:100%;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:block`;
-        await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
-        container.appendChild(canvas);
-      }
-      // zoom on PDF container
-      setupZoom(content, document.getElementById('pdf-pages'), false);
-    }
-    else if (ext==='docx') {
-      // render docx using mammoth.js
-      content.innerHTML='<div style="color:#6e6e73;text-align:center;padding:20px"><span class="spinner"></span> Word-Dokument wird gerendert…</div>';
-      const script=document.createElement('script');
-      script.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
-      script.onload=async()=>{
-        try {
-          const result=await mammoth.convertToHtml({arrayBuffer:dec});
-          content.innerHTML=`<div style="background:#fff;color:#111;padding:24px;border-radius:8px;width:100%;max-width:700px;font-family:Georgia,serif;font-size:15px;line-height:1.7;overflow:auto">${result.value}</div>`;
-        } catch(e2) { content.innerHTML=`<div style="color:#ff453a;text-align:center">Fehler: ${escHtml(e2.message)}</div>`; }
-      };
-      document.head.appendChild(script);
-    }
-    else if (mime.startsWith('video/')) { const url=URL.createObjectURL(new Blob([dec],{type:mime})); content.innerHTML=`<video src="${url}" controls style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px"></video>`; }
-    else if (mime.startsWith('audio/')) { const url=URL.createObjectURL(new Blob([dec],{type:mime})); content.innerHTML=`<audio src="${url}" controls style="width:100%"></audio>`; }
-    else if (mime==='text/plain') { const text=new TextDecoder().decode(dec); content.innerHTML=`<pre style="color:#f5f5f7;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.6;max-width:100%;overflow:auto">${escHtml(text)}</pre>`; }
-    else if (mime==='text/html') { const url=URL.createObjectURL(new Blob([dec],{type:mime})); content.innerHTML=`<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px;background:#fff"></iframe>`; }
-    else { content.innerHTML=`<div style="color:#6e6e73;text-align:center">Vorschau nicht verfügbar</div>`; }
+if (mime.startsWith('image/')) {
+const url=URL.createObjectURL(new Blob([dec],{type:mime}));
+content.style.overflow='hidden'; content.style.padding='0';
+content.innerHTML=`<div id="zoom-wrap" style="width:100%;height:100%;overflow:hidden;position:relative;touch-action:none"><img id="zoom-img" src="${url}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;transform-origin:0 0"></div>`;
+setupZoom(document.getElementById('zoom-wrap'), document.getElementById('zoom-img'), true);
+}
+else if (ext==='pdf') {
+content.style.overflow='auto'; content.style.padding='8px';
+content.innerHTML='<div style="color:#6e6e73;text-align:center;padding:20px"><span class="spinner"></span> PDF wird geladen…</div>';
+const pdfData=new Uint8Array(dec);
+const loadPdfJs=()=>new Promise((res,rej)=>{
+if(window.pdfjsLib){res();return;}
+const s=document.createElement('script');
+s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res();};
+s.onerror=rej; document.head.appendChild(s);
+});
+await loadPdfJs();
+const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;
+content.innerHTML='<div id="pdf-pages" style="width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;touch-action:none"></div>';
+const container=document.getElementById('pdf-pages');
+for(let i=1;i<=pdfDoc.numPages;i++){
+const page=await pdfDoc.getPage(i);
+const devicePixelRatio=window.devicePixelRatio||2;
+const baseScale=window.innerWidth/page.getViewport({scale:1}).width*0.95;
+const vp=page.getViewport({scale:baseScale*devicePixelRatio});
+const canvas=document.createElement('canvas');
+canvas.width=vp.width; canvas.height=vp.height;
+canvas.style.cssText=`width:${vp.width/devicePixelRatio}px;max-width:100%;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:block`;
+await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+container.appendChild(canvas);
+}
+// zoom on PDF container
+setupZoom(content, document.getElementById('pdf-pages'), false);
+}
+else if (ext==='docx') {
+// render docx using mammoth.js
+content.innerHTML='<div style="color:#6e6e73;text-align:center;padding:20px"><span class="spinner"></span> Word-Dokument wird gerendert…</div>';
+const script=document.createElement('script');
+script.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+script.onload=async()=>{
+try {
+const result=await mammoth.convertToHtml({arrayBuffer:dec});
+content.innerHTML=`<div style="background:#fff;color:#111;padding:24px;border-radius:8px;width:100%;max-width:700px;font-family:Georgia,serif;font-size:15px;line-height:1.7;overflow:auto">${result.value}</div>`;
+} catch(e2) { content.innerHTML=`<div style="color:#ff453a;text-align:center">Fehler: ${escHtml(e2.message)}</div>`; }
+};
+document.head.appendChild(script);
+}
+else if (mime.startsWith('video/')) { const url=URL.createObjectURL(new Blob([dec],{type:mime})); content.innerHTML=`<video src="${url}" controls style="max-width:100%;max-height:calc(100vh - 80px);border-radius:8px"></video>`; }
+else if (mime.startsWith('audio/')) { const url=URL.createObjectURL(new Blob([dec],{type:mime})); content.innerHTML=`<audio src="${url}" controls style="width:100%"></audio>`; }
+else if (mime==='text/plain') { const text=new TextDecoder().decode(dec); content.innerHTML=`<pre style="color:#f5f5f7;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.6;max-width:100%;overflow:auto">${escHtml(text)}</pre>`; }
+else if (mime==='text/html') { const url=URL.createObjectURL(new Blob([dec],{type:mime})); content.innerHTML=`<iframe src="${url}" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px;background:#fff"></iframe>`; }
+else { content.innerHTML=`<div style="color:#6e6e73;text-align:center">Vorschau nicht verfügbar</div>`; }
 
-    document.getElementById('preview-modal').style.display='flex';
-  } catch(e) { showToast('❌ '+e.message); }
+document.getElementById('preview-modal').style.display='flex';
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 function closePreview() {
-  document.getElementById('preview-modal').style.display='none';
-  document.getElementById('preview-content').innerHTML='';
+document.getElementById('preview-modal').style.display='none';
+document.getElementById('preview-content').innerHTML='';
 }
 
 async function downloadDoc(path,name) {
-  showToast('⬇️ Wird entschlüsselt…');
-  try {
-    const dec=await decryptFile(path);
-    const url=URL.createObjectURL(new Blob([dec]));
-    const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
-    showToast('✅ Heruntergeladen');
-  } catch(e) { showToast('❌ '+e.message); }
+showToast('⬇️ Wird entschlüsselt…');
+try {
+const dec=await decryptFile(path);
+const url=URL.createObjectURL(new Blob([dec]));
+const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+showToast('✅ Heruntergeladen');
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 async function shareDoc(path, name) {
-  showToast('⏳ Wird vorbereitet…');
-  try {
-    const dec=await decryptFile(path);
-    const ext=name.split('.').pop().toLowerCase();
-    const mimeMap={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',pdf:'application/pdf',mp4:'video/mp4',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
-    const mime=mimeMap[ext]||'application/octet-stream';
-    const file=new File([dec], name, {type:mime});
-    if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-      await navigator.share({files:[file], title:name});
-    } else {
-      // fallback: download
-      const url=URL.createObjectURL(new Blob([dec]));
-      const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
-      showToast('Teilen nicht verfügbar — heruntergeladen');
-    }
-  } catch(e) { if(e.name!=='AbortError') showToast('❌ '+e.message); }
+showToast('⏳ Wird vorbereitet…');
+try {
+const dec=await decryptFile(path);
+const ext=name.split('.').pop().toLowerCase();
+const mimeMap={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',pdf:'application/pdf',mp4:'video/mp4',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
+const mime=mimeMap[ext]||'application/octet-stream';
+const file=new File([dec], name, {type:mime});
+if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+await navigator.share({files:[file], title:name});
+} else {
+// fallback: download
+const url=URL.createObjectURL(new Blob([dec]));
+const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+showToast('Teilen nicht verfügbar — heruntergeladen');
+}
+} catch(e) { if(e.name!=='AbortError') showToast('❌ '+e.message); }
 }
 
 async function deleteEntry(table, id) {
-  if (!confirm('Wirklich löschen?')) return;
-  try {
-    await api(table+'.delete', {id}); // server also removes the storage file for docs
-    showToast('🗑 Gelöscht');
-    if (table==='passwords') loadPasswords(); else loadDocs();
-  } catch(e) { showToast('❌ '+e.message); }
+if (!confirm('Wirklich löschen?')) return;
+try {
+await api(table+'.delete', {id}); // server also removes the storage file for docs
+showToast('🗑 Gelöscht');
+if (table==='passwords') loadPasswords(); else loadDocs();
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 // ══════════════════════════════════════
 // GLOBAL SEARCH
 // ══════════════════════════════════════
 async function globalSearch(query) {
-  const q=query.toLowerCase().trim();
-  const container=document.getElementById('global-results');
-  if (!q) { container.innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; return; }
+const q=query.toLowerCase().trim();
+const container=document.getElementById('global-results');
+if (!q) { container.innerHTML='<div class="empty-state">Suchbegriff eingeben…</div>'; return; }
 
-  container.innerHTML='<div class="empty-state"><span class="spinner"></span>Suche…</div>';
-  try {
-    // load all passwords and docs across all folders
-    const pwRows=(await api('passwords.listAll')).rows;
-    const docRows=(await api('docs.listAll')).rows;
+container.innerHTML='<div class="empty-state"><span class="spinner"></span>Suche…</div>';
+try {
+// load all passwords and docs across all folders
+const pwRows=(await api('passwords.listAll')).rows;
+const docRows=(await api('docs.listAll')).rows;
 
-    const pwAll=[], docAll=[];
-    for (const r of pwRows) { try { const o=JSON.parse(await decryptAny(r.data,vaultCode)); pwAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
-    for (const r of docRows) { try { const o=JSON.parse(await decryptAny(r.data,vaultCode)); docAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
+const pwAll=[], docAll=[];
+for (const r of pwRows) { try { const o=JSON.parse(await decryptAny(r.data,vaultCode)); pwAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
+for (const r of docRows) { try { const o=JSON.parse(await decryptAny(r.data,vaultCode)); docAll.push({id:r.id,folder_id:r.folder_id,...o}); } catch {} }
 
-    const pwMatches=pwAll.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q)));
-    const docMatches=docAll.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q)));
+const pwMatches=pwAll.filter(d=>d.name.toLowerCase().includes(q)||(d.user&&d.user.toLowerCase().includes(q)));
+const docMatches=docAll.filter(d=>d.name.toLowerCase().includes(q)||(d.desc&&d.desc.toLowerCase().includes(q)));
 
-    container.innerHTML='';
-    if (!pwMatches.length && !docMatches.length) { container.innerHTML='<div class="empty-state">Keine Ergebnisse für „'+escHtml(query)+'"</div>'; return; }
+container.innerHTML='';
+if (!pwMatches.length && !docMatches.length) { container.innerHTML='<div class="empty-state">Keine Ergebnisse für „'+escHtml(query)+'"</div>'; return; }
 
-    // helper: get folder name
-    const folderName=id=>{ const f=allFolders.find(f=>f.id===id); return f?f.name:''; };
+// helper: get folder name
+const folderName=id=>{ const f=allFolders.find(f=>f.id===id); return f?f.name:''; };
 
-    if (pwMatches.length) {
-      const hdr=document.createElement('div'); hdr.className='section-hdr'; hdr.textContent='🔑 Passwörter'; container.appendChild(hdr);
-      for (const obj of pwMatches) {
-        const card=document.createElement('div'); card.className='card';
-        card.innerHTML=`
-          <div class="card-actions"><button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')" style="width:44px;height:44px;font-size:18px">📋</button></div>
-          <div class="card-label">Name</div>
-          <div class="card-value" style="margin-bottom:4px">${highlight(obj.name,q)}</div>
-          ${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:4px">${highlight(obj.user,q)}</div>`:''}
-          <div class="card-label">Passwort</div>
-          <div class="card-value" style="font-family:monospace;margin-bottom:4px">${escHtml(obj.pass)}</div>
-          <div class="card-label">Ordner</div><div class="card-value" style="color:#6e6e73;font-size:13px">📁 ${escHtml(folderName(obj.folder_id))}</div>`;
-        container.appendChild(card);
-      }
-    }
-    if (docMatches.length) {
-      const hdr=document.createElement('div'); hdr.className='section-hdr'; hdr.textContent='📄 Dokumente'; container.appendChild(hdr);
-      for (const obj of docMatches) {
-        const ext=obj.name.split('.').pop().toLowerCase();
-        const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
-        const card=document.createElement('div'); card.className='doc-card';
-        card.innerHTML=`
-          <div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
-            <div class="doc-name">${previewable?'👁 ':'📄 '}${highlight(obj.desc||obj.name,q)}</div>
-            <div class="doc-meta">📁 ${escHtml(folderName(obj.folder_id))} · ${formatSize(obj.size)}</div>
-          </div>
-          <button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>`;
-        container.appendChild(card);
-      }
-    }
-  } catch(e) { container.innerHTML='<div class="empty-state">Fehler: '+escHtml(e.message)+'</div>'; }
+if (pwMatches.length) {
+const hdr=document.createElement('div'); hdr.className='section-hdr'; hdr.textContent='🔑 Passwörter'; container.appendChild(hdr);
+for (const obj of pwMatches) {
+const card=document.createElement('div'); card.className='card';
+card.innerHTML=`
+<div class="card-actions"><button class="icon-btn" onclick="copyVal('${escHtml(obj.pass)}')" style="width:44px;height:44px;font-size:18px">📋</button></div>
+<div class="card-label">Name</div>
+<div class="card-value" style="margin-bottom:4px">${highlight(obj.name,q)}</div>
+${obj.user?`<div class="card-label">Benutzer</div><div class="card-value" style="margin-bottom:4px">${highlight(obj.user,q)}</div>`:''}
+<div class="card-label">Passwort</div>
+<div class="card-value" style="font-family:monospace;margin-bottom:4px">${escHtml(obj.pass)}</div>
+<div class="card-label">Ordner</div><div class="card-value" style="color:#6e6e73;font-size:13px">📁 ${escHtml(folderName(obj.folder_id))}</div>`;
+container.appendChild(card);
+}
+}
+if (docMatches.length) {
+const hdr=document.createElement('div'); hdr.className='section-hdr'; hdr.textContent='📄 Dokumente'; container.appendChild(hdr);
+for (const obj of docMatches) {
+const ext=obj.name.split('.').pop().toLowerCase();
+const previewable=['jpg','jpeg','png','gif','webp','svg','pdf','html','htm','txt','mp4','webm','mp3'].includes(ext);
+const card=document.createElement('div'); card.className='doc-card';
+card.innerHTML=`
+<div class="doc-info" style="cursor:${previewable?'pointer':'default'}" onclick="${previewable?`previewDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')`:''}" >
+<div class="doc-name">${previewable?'👁 ':'📄 '}${highlight(obj.desc||obj.name,q)}</div>
+<div class="doc-meta">📁 ${escHtml(folderName(obj.folder_id))} · ${formatSize(obj.size)}</div>
+</div>
+<button class="icon-btn" onclick="downloadDoc('${escHtml(obj.path)}','${escHtml(obj.name)}')">⬇️</button>`;
+container.appendChild(card);
+}
+}
+} catch(e) { container.innerHTML='<div class="empty-state">Fehler: '+escHtml(e.message)+'</div>'; }
 }
 
 function highlight(text,q) {
-  const safe=escHtml(text), idx=safe.toLowerCase().indexOf(q.toLowerCase());
-  if (idx===-1) return safe;
-  return safe.slice(0,idx)+`<mark style="background:#ff9f0a33;color:#ff9f0a;border-radius:2px">${safe.slice(idx,idx+q.length)}</mark>`+safe.slice(idx+q.length);
+const safe=escHtml(text), idx=safe.toLowerCase().indexOf(q.toLowerCase());
+if (idx===-1) return safe;
+return safe.slice(0,idx)+`<mark style="background:#ff9f0a33;color:#ff9f0a;border-radius:2px">${safe.slice(idx,idx+q.length)}</mark>`+safe.slice(idx+q.length);
 }
 
 // ══════════════════════════════════════
@@ -1303,51 +1340,51 @@ zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-
 // USER MANAGEMENT
 // ══════════════════════════════════════
 async function openUsersPanel() {
-  document.getElementById('users-modal').style.display = 'flex';
-  loadUsers();
+document.getElementById('users-modal').style.display = 'flex';
+loadUsers();
 }
 
 function closeUsersPanel() {
-  document.getElementById('users-modal').style.display = 'none';
+document.getElementById('users-modal').style.display = 'none';
 }
 
 async function loadUsers() {
-  const list = document.getElementById('users-list');
-  list.innerHTML = '<div class="empty-state"><span class="spinner"></span>Lade…</div>';
-  try {
-    const {users:allNames, counts} = await api('users.list');
+const list = document.getElementById('users-list');
+list.innerHTML = '<div class="empty-state"><span class="spinner"></span>Lade…</div>';
+try {
+const {users:allNames, counts} = await api('users.list');
 
-    if (!allNames.length) { list.innerHTML='<div class="empty-state">Keine Benutzer gefunden</div>'; return; }
+if (!allNames.length) { list.innerHTML='<div class="empty-state">Keine Benutzer gefunden</div>'; return; }
 
-    list.innerHTML = '';
-    for (const name of allNames) {
-      const pwCount  = counts[name]?.pw || 0;
-      const docCount = counts[name]?.docs || 0;
-      const folderCount = counts[name]?.folders || 0;
-      const isCurrent = name === getUsername();
+list.innerHTML = '';
+for (const name of allNames) {
+const pwCount = counts[name]?.pw || 0;
+const docCount = counts[name]?.docs || 0;
+const folderCount = counts[name]?.folders || 0;
+const isCurrent = name === getUsername();
 
-      const card = document.createElement('div');
-      card.style.cssText = 'background:#1c1c1e;border-radius:12px;padding:14px 16px;margin-bottom:8px;border:1px solid '+(isCurrent?'#ff9f0a':'#2c2c2e')+';display:flex;align-items:center;gap:12px';
-      card.innerHTML = `
-        <div style="flex:1">
-          <div style="color:#f5f5f7;font-size:16px;font-weight:600">${escHtml(name)} ${isCurrent?'<span style="color:#ff9f0a;font-size:12px">(aktiv)</span>':''}</div>
-          <div style="color:#6e6e73;font-size:12px;margin-top:2px">${folderCount} Ordner · ${pwCount} Passwörter · ${docCount} Dokumente</div>
-        </div>
-        ${isCurrent ? `<button class="icon-btn" onclick="changeVaultCode()" title="Code ändern">🔑</button>` : ''}
-        ${!isCurrent ? `<button class="icon-btn danger" onclick="deleteUser('${escHtml(name)}')" title="Löschen">🗑</button>` : ''}
-      `;
-      list.appendChild(card);
-    }
-  } catch(e) { list.innerHTML='<div class="empty-state">Fehler: '+escHtml(e.message)+'</div>'; }
+const card = document.createElement('div');
+card.style.cssText = 'background:#1c1c1e;border-radius:12px;padding:14px 16px;margin-bottom:8px;border:1px solid '+(isCurrent?'#ff9f0a':'#2c2c2e')+';display:flex;align-items:center;gap:12px';
+card.innerHTML = `
+<div style="flex:1">
+<div style="color:#f5f5f7;font-size:16px;font-weight:600">${escHtml(name)} ${isCurrent?'<span style="color:#ff9f0a;font-size:12px">(aktiv)</span>':''}</div>
+<div style="color:#6e6e73;font-size:12px;margin-top:2px">${folderCount} Ordner · ${pwCount} Passwörter · ${docCount} Dokumente</div>
+</div>
+${isCurrent ? `<button class="icon-btn" onclick="changeVaultCode()" title="Code ändern">🔑</button>` : ''}
+${!isCurrent ? `<button class="icon-btn danger" onclick="deleteUser('${escHtml(name)}')" title="Löschen">🗑</button>` : ''}
+`;
+list.appendChild(card);
+}
+} catch(e) { list.innerHTML='<div class="empty-state">Fehler: '+escHtml(e.message)+'</div>'; }
 }
 
 async function deleteUser(name) {
-  if (!confirm(`Benutzer "${name}" und ALLE Daten löschen?`)) return;
-  try {
-    await api('users.delete', {target:name});
-    showToast(`🗑 Benutzer "${name}" gelöscht`);
-    loadUsers();
-  } catch(e) { showToast('❌ '+e.message); }
+if (!confirm(`Benutzer "${name}" und ALLE Daten löschen?`)) return;
+try {
+await api('users.delete', {target:name});
+showToast(`🗑 Benutzer "${name}" gelöscht`);
+loadUsers();
+} catch(e) { showToast('❌ '+e.message); }
 }
 
 // ══════════════════════════════════════
@@ -1359,117 +1396,117 @@ const FP_KEY = 'tresor_fp_registered';
 // Eintrag vom alten (unsicheren) Schema hat stattdessen "encCode" und
 // muss verworfen werden, damit automatisch neu registriert wird.
 function fpDataValid(raw) {
-  try {
-    const o = JSON.parse(raw);
-    return !!(o && o.credId && o.prfSalt && o.wrappedCode);
-  } catch(e) { return false; }
+try {
+const o = JSON.parse(raw);
+return !!(o && o.credId && o.prfSalt && o.wrappedCode);
+} catch(e) { return false; }
 }
 
 // ── Biometrische Schnell-Entsperrung: der Code wird NUR noch mit einem
-//    Schlüssel "gewrapped", den die WebAuthn-PRF-Erweiterung liefert —
-//    der existiert ausschließlich NACH erfolgreicher Biometrie-Prüfung
-//    und steht nirgends im Quelltext. Unterstützt das Gerät/Browser
-//    PRF nicht, wird gar nichts lokal gespeichert (alte Variante mit
-//    fest codiertem Schlüssel bot nur Schein-Sicherheit und wurde
-//    ersatzlos entfernt — dann einfach den Code auf dem Rechner tippen). ──
+// Schlüssel "gewrapped", den die WebAuthn-PRF-Erweiterung liefert —
+// der existiert ausschließlich NACH erfolgreicher Biometrie-Prüfung
+// und steht nirgends im Quelltext. Unterstützt das Gerät/Browser
+// PRF nicht, wird gar nichts lokal gespeichert (alte Variante mit
+// fest codiertem Schlüssel bot nur Schein-Sicherheit und wurde
+// ersatzlos entfernt — dann einfach den Code auf dem Rechner tippen). ──
 async function registerFingerprint(code) {
-  if (!window.PublicKeyCredential) return;
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const cred = await navigator.credentials.create({
-      publicKey: {
-        challenge,
-        rp: { name: 'Rechner' },
-        user: { id: new TextEncoder().encode(getUsername()), name: getUsername(), displayName: getUsername() },
-        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'required', requireResidentKey: true },
-        extensions: { prf: {} }, // nur Fähigkeit abfragen, noch nicht auswerten
-        timeout: 30000
-      }
-    });
-    if (!cred) return;
-    const prfSupported = cred.getClientExtensionResults?.().prf?.enabled;
-    if (!prfSupported) { showToast('ℹ️ PRF bei Erstellung nicht verfügbar — Gerät/Browser unterstützt das nicht'); return; }
-    // Viele Plattformen liefern den eigentlichen PRF-Wert erst bei einer
-    // echten Authentifizierung, nicht schon bei der Erstellung — daher
-    // direkt im Anschluss einmal "entsperren" (zweiter Biometrie-Prompt),
-    // um den Wert zu bekommen.
-    const prfSalt = crypto.getRandomValues(new Uint8Array(32));
-    const assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        allowCredentials: [{ type: 'public-key', id: cred.rawId }],
-        userVerification: 'required',
-        extensions: { prf: { eval: { first: prfSalt } } },
-        timeout: 30000
-      }
-    });
-    const prfResult = assertion?.getClientExtensionResults?.().prf?.results?.first;
-    if (!prfResult) { showToast('ℹ️ PRF bei Erstellung ok, bei Abfrage aber kein Ergebnis'); return; }
-    const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
-    const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['encrypt']);
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const wrapped = await crypto.subtle.encrypt({name:'AES-GCM', iv}, wrapKey, new TextEncoder().encode(code));
-    const combined = new Uint8Array(12+wrapped.byteLength); combined.set(iv); combined.set(new Uint8Array(wrapped),12);
-    localStorage.setItem(FP_KEY, JSON.stringify({
-      credId: bytesToB64(new Uint8Array(cred.rawId)),
-      prfSalt: bytesToB64(prfSalt),
-      wrappedCode: bytesToB64(combined)
-    }));
-    showToast('✅ Schnellentsperrung eingerichtet');
-  } catch(e) { showToast('⚠️ Schnellentsperrung-Setup: '+e.message); }
+if (!window.PublicKeyCredential) return;
+try {
+const challenge = crypto.getRandomValues(new Uint8Array(32));
+const cred = await navigator.credentials.create({
+publicKey: {
+challenge,
+rp: { name: 'Rechner' },
+user: { id: new TextEncoder().encode(getUsername()), name: getUsername(), displayName: getUsername() },
+pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'required', requireResidentKey: true },
+extensions: { prf: {} }, // nur Fähigkeit abfragen, noch nicht auswerten
+timeout: 30000
+}
+});
+if (!cred) return;
+const prfSupported = cred.getClientExtensionResults?.().prf?.enabled;
+if (!prfSupported) { showToast('ℹ️ PRF bei Erstellung nicht verfügbar — Gerät/Browser unterstützt das nicht'); return; }
+// Viele Plattformen liefern den eigentlichen PRF-Wert erst bei einer
+// echten Authentifizierung, nicht schon bei der Erstellung — daher
+// direkt im Anschluss einmal "entsperren" (zweiter Biometrie-Prompt),
+// um den Wert zu bekommen.
+const prfSalt = crypto.getRandomValues(new Uint8Array(32));
+const assertion = await navigator.credentials.get({
+publicKey: {
+challenge: crypto.getRandomValues(new Uint8Array(32)),
+allowCredentials: [{ type: 'public-key', id: cred.rawId }],
+userVerification: 'required',
+extensions: { prf: { eval: { first: prfSalt } } },
+timeout: 30000
+}
+});
+const prfResult = assertion?.getClientExtensionResults?.().prf?.results?.first;
+if (!prfResult) { showToast('ℹ️ PRF bei Erstellung ok, bei Abfrage aber kein Ergebnis'); return; }
+const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
+const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['encrypt']);
+const iv = crypto.getRandomValues(new Uint8Array(12));
+const wrapped = await crypto.subtle.encrypt({name:'AES-GCM', iv}, wrapKey, new TextEncoder().encode(code));
+const combined = new Uint8Array(12+wrapped.byteLength); combined.set(iv); combined.set(new Uint8Array(wrapped),12);
+localStorage.setItem(FP_KEY, JSON.stringify({
+credId: bytesToB64(new Uint8Array(cred.rawId)),
+prfSalt: bytesToB64(prfSalt),
+wrappedCode: bytesToB64(combined)
+}));
+showToast('✅ Schnellentsperrung eingerichtet');
+} catch(e) { showToast('⚠️ Schnellentsperrung-Setup: '+e.message); }
 }
 
 async function fingerprintLogin() {
-  if (!window.PublicKeyCredential) return;
-  const stored = localStorage.getItem(FP_KEY);
-  if (!stored) return;
-  if (!fpDataValid(stored)) {
-    // alter Eintrag (Vorgänger-Schema) — verwerfen, nächstes manuelles
-    // Entsperren registriert automatisch neu im sicheren Format
-    localStorage.removeItem(FP_KEY);
-    showToast('ℹ️ Schnellentsperrung muss neu eingerichtet werden — bitte Code eingeben');
-    return;
-  }
-  try {
-    const {credId, prfSalt, wrappedCode} = JSON.parse(stored);
-    const credIdBytes = b64ToBytes(credId);
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        allowCredentials: [{ type: 'public-key', id: credIdBytes }],
-        userVerification: 'required',
-        extensions: { prf: { eval: { first: b64ToBytes(prfSalt) } } },
-        timeout: 30000
-      }
-    });
-    if (!assertion) return;
-    const prfResult = assertion.getClientExtensionResults?.().prf?.results?.first;
-    if (!prfResult) return; // ohne PRF-Ergebnis kann der Code nicht entwickelt werden
-    const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
-    const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['decrypt']);
-    const bytes = b64ToBytes(wrappedCode);
-    const dec = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, wrapKey, bytes.slice(12));
-    const code = new TextDecoder().decode(dec);
-    await tryUnlock(code); // geht durch denselben getSalt/login/migrate-Ablauf wie Tippen
-  } catch(e) { /* wrong finger or cancelled — silent */ }
+if (!window.PublicKeyCredential) return;
+const stored = localStorage.getItem(FP_KEY);
+if (!stored) return;
+if (!fpDataValid(stored)) {
+// alter Eintrag (Vorgänger-Schema) — verwerfen, nächstes manuelles
+// Entsperren registriert automatisch neu im sicheren Format
+localStorage.removeItem(FP_KEY);
+showToast('ℹ️ Schnellentsperrung muss neu eingerichtet werden — bitte Code eingeben');
+return;
+}
+try {
+const {credId, prfSalt, wrappedCode} = JSON.parse(stored);
+const credIdBytes = b64ToBytes(credId);
+const challenge = crypto.getRandomValues(new Uint8Array(32));
+const assertion = await navigator.credentials.get({
+publicKey: {
+challenge,
+allowCredentials: [{ type: 'public-key', id: credIdBytes }],
+userVerification: 'required',
+extensions: { prf: { eval: { first: b64ToBytes(prfSalt) } } },
+timeout: 30000
+}
+});
+if (!assertion) return;
+const prfResult = assertion.getClientExtensionResults?.().prf?.results?.first;
+if (!prfResult) return; // ohne PRF-Ergebnis kann der Code nicht entwickelt werden
+const wrapKeyBits = await crypto.subtle.digest('SHA-256', prfResult);
+const wrapKey = await crypto.subtle.importKey('raw', wrapKeyBits, 'AES-GCM', false, ['decrypt']);
+const bytes = b64ToBytes(wrappedCode);
+const dec = await crypto.subtle.decrypt({name:'AES-GCM', iv:bytes.slice(0,12)}, wrapKey, bytes.slice(12));
+const code = new TextDecoder().decode(dec);
+await tryUnlock(code); // geht durch denselben getSalt/login/migrate-Ablauf wie Tippen
+} catch(e) { /* wrong finger or cancelled — silent */ }
 }
 
 // check on load if fingerprint is available
 window.addEventListener('DOMContentLoaded', ()=>{
-  // nothing visible — fingerprint is triggered by tapping the display
+// nothing visible — fingerprint is triggered by tapping the display
 });
 
 // Keyboard
 document.addEventListener('keydown',e=>{
-  if (document.querySelector('.overlay.open')) return;
-  const map={'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','.':'.','*':'×','/':'÷','+':'+','-':'−','Enter':'=','Escape':'AC'};
-  const k=map[e.key]; if(!k) return; e.preventDefault();
-  if(k==='AC') calcFunc('AC');
-  else if(k==='=') calcEquals();
-  else if(['÷','×','−','+'].includes(k)) calcOp(k);
-  else calcNum(k);
+if (document.querySelector('.overlay.open')) return;
+const map={'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','.':'.','*':'×','/':'÷','+':'+','-':'−','Enter':'=','Escape':'AC'};
+const k=map[e.key]; if(!k) return; e.preventDefault();
+if(k==='AC') calcFunc('AC');
+else if(k==='=') calcEquals();
+else if(['÷','×','−','+'].includes(k)) calcOp(k);
+else calcNum(k);
 });
 </script>
 </body>
